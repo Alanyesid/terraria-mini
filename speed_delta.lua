@@ -4,7 +4,9 @@
     Módulos del panel:
 
     VELOCIDAD
-      - ON/OFF: la velocidad sube poco a poco hasta la máxima.
+      - Al ejecutar el script ya arranca en ON: la velocidad sube
+        sola hasta la máxima, sin tocar nada.
+      - ON/OFF: apaga o vuelve a prender la subida.
       - + / - : cambia la velocidad máxima (límite 1000).
 
     TELETRANSPORTE
@@ -34,6 +36,7 @@ local INCREMENTO        = 10    -- cuánto sube en cada paso
 local INTERVALO         = 0.1   -- segundos entre cada subida
 local PASO_MAXIMA       = 50    -- cuánto cambian los botones + / -
 local ALTURA_TP         = 3     -- cuántos studs por encima del punto apareces
+local ACTIVAR_AL_INICIAR = true -- true: la velocidad arranca sola al ejecutar
 
 ----------------------------------------------------------------
 -- SI YA HABÍA UNA COPIA ABIERTA, SE CIERRA
@@ -346,4 +349,9 @@ end
 _G.SpeedHubCerrar = cerrar
 btnCerrar.MouseButton1Click:Connect(cerrar)
 
-actualizarUI()
+if ACTIVAR_AL_INICIAR then
+    setActivo(true)
+    setEstado("Velocidad subiendo sola")
+else
+    actualizarUI()
+end
