@@ -32,6 +32,14 @@
       - Solo funciona en juegos donde el daño se maneja en tu
         pantalla; si el servidor controla la vida, no tiene efecto.
 
+    ANTI-MOBS
+      - Busca los mobs (personajes del juego que no son jugadores)
+        y les quita el contacto contigo en tu pantalla, para que
+        no te puedan tocar ni empujar.
+      - Muestra cuántos mobs hay y qué tan cerca está el más cercano.
+      - Si el juego calcula el daño en el servidor, puede que
+        igual te hagan daño.
+
     X: cierra todo y deja el personaje normal.
 ]]
 
@@ -43,6 +51,7 @@ local VELOCIDAD_ELEGIDA  = 100   -- velocidad que aparece escrita al iniciar
 local LIMITE_VELOCIDAD   = 1000  -- máximo que se puede escribir
 local ACTIVAR_AL_INICIAR = true  -- true: la velocidad elegida se aplica al ejecutar
 local ALTURA_TP          = 3     -- cuántos studs por encima del punto apareces
+local DISTANCIA_ALERTA   = 30    -- a cuántos studs avisa que hay un mob cerca
 
 local VEL_VEHICULO        = 200  -- velocidad del auto/moto (studs por segundo)
 local LIMITE_VEHICULO     = 1000 -- tope de los botones +
@@ -68,6 +77,7 @@ local activo         = false
 local autoRegreso    = false
 local vehiculoActivo = false
 local invencible     = false
+local antiMobs       = false
 local origen         = nil   -- Vector3
 local punto          = nil   -- Vector3
 local conexiones     = {}
@@ -98,7 +108,7 @@ gui.ResetOnSpawn = false
 gui.Parent = guiParent
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 220, 0, 420)
+frame.Size = UDim2.new(0, 220, 0, 440)
 frame.Position = UDim2.new(0, 20, 0.15, 0)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 frame.BorderSizePixel = 0
@@ -182,10 +192,15 @@ local btnVehMas   = crearBoton("+",   168, 296, 42, 30, GRIS)
 
 -- Invencible
 crearLabel("EXTRA", 336, AZUL, 12)
-local btnInvencible = crearBoton("Invencible: OFF", 10, 354, 200, 30, ROJO)
+local btnInvencible = crearBoton("Invencible: OFF", 10, 354, 97, 30, ROJO)
+local btnAntiMobs   = crearBoton("Anti-mobs: OFF",  113, 354, 97, 30, ROJO)
+btnInvencible.TextSize = 12
+btnAntiMobs.TextSize = 12
+local lblMobs = crearLabel("Mobs: -", 390, Color3.fromRGB(200, 200, 200), 12)
+lblMobs.Size = UDim2.new(1, -20, 0, 20)
 
 -- Estado
-local lblEstado = crearLabel("Listo", 394, Color3.fromRGB(200, 200, 200), 12)
+local lblEstado = crearLabel("Listo", 412, Color3.fromRGB(200, 200, 200), 12)
 lblEstado.Size = UDim2.new(1, -20, 0, 20)
 
 local function setEstado(texto)
@@ -203,6 +218,8 @@ local function actualizarUI()
     btnVeh.BackgroundColor3 = vehiculoActivo and VERDE or ROJO
     btnInvencible.Text = invencible and "Invencible: ON" or "Invencible: OFF"
     btnInvencible.BackgroundColor3 = invencible and VERDE or ROJO
+    btnAntiMobs.Text = antiMobs and "Anti-mobs: ON" or "Anti-mobs: OFF"
+    btnAntiMobs.BackgroundColor3 = antiMobs and VERDE or ROJO
 end
 
 ----------------------------------------------------------------
@@ -451,6 +468,117 @@ table.insert(conexiones, RunService.Heartbeat:Connect(function()
 end))
 
 ----------------------------------------------------------------
+-- MÓDULO: ANTI-MOBS
+----------------------------------------------------------------
+local mobs = {}              -- modelo -> true
+local partesOriginales = {}  -- parte -> { CanTouch, CanCollide }
+
+local function esMob(modelo)
+    if not modelo or not modelo:IsA("Model") then return false end
+    if modelo == player.Character then return false end
+    if Players:GetPlayerFromCharacter(modelo) then return false end
+    return modelo:FindFirstChildOfClass("Humanoid") ~= nil
+end
+
+local function neutralizarParte(parte)
+    if not parte:IsA("BasePart") or partesOriginales[parte] then return end
+    partesOriginales[parte] = { parte.CanTouch, parte.CanCollide }
+    parte.CanTouch = false
+    parte.CanCollide = false
+end
+
+local function neutralizarMob(modelo)
+    mobs[modelo] = true
+    for _, d in ipairs(modelo:GetDescendants()) do
+        neutralizarParte(d)
+    end
+end
+
+local function buscarMobs()
+    for _, d in ipairs(workspace:GetDescendants()) do
+        if d:IsA("Humanoid") and esMob(d.Parent) then
+            neutralizarMob(d.Parent)
+        end
+    end
+end
+
+local function restaurarMobs()
+    for parte, orig in pairs(partesOriginales) do
+        if parte and parte.Parent then
+            pcall(function()
+                parte.CanTouch = orig[1]
+                parte.CanCollide = orig[2]
+            end)
+        end
+    end
+    partesOriginales = {}
+    mobs = {}
+    lblMobs.Text = "Mobs: -"
+end
+
+btnAntiMobs.MouseButton1Click:Connect(function()
+    antiMobs = not antiMobs
+    if antiMobs then
+        buscarMobs()
+        setEstado("Anti-mobs activado")
+    else
+        restaurarMobs()
+        setEstado("Anti-mobs apagado")
+    end
+    actualizarUI()
+end)
+
+-- Mobs que aparecen después
+table.insert(conexiones, workspace.DescendantAdded:Connect(function(obj)
+    if not antiMobs then return end
+    if obj:IsA("Humanoid") then
+        task.defer(function()
+            if esMob(obj.Parent) then neutralizarMob(obj.Parent) end
+        end)
+    elseif obj:IsA("BasePart") then
+        local modelo = obj:FindFirstAncestorOfClass("Model")
+        while modelo and not mobs[modelo] do
+            modelo = modelo:FindFirstAncestorOfClass("Model")
+        end
+        if modelo then neutralizarParte(obj) end
+    end
+end))
+
+-- Cada medio segundo: limpia mobs que ya no existen y avisa del más cercano
+local tiempoMobs = 0
+table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
+    if not antiMobs then return end
+    tiempoMobs = tiempoMobs + dt
+    if tiempoMobs < 0.5 then return end
+    tiempoMobs = 0
+
+    local hrp = getHRP()
+    local cantidad, cercano = 0, math.huge
+    for modelo in pairs(mobs) do
+        if not modelo.Parent then
+            mobs[modelo] = nil
+        else
+            cantidad = cantidad + 1
+            local pivote = modelo:GetPivot().Position
+            if hrp then
+                cercano = math.min(cercano, (pivote - hrp.Position).Magnitude)
+            end
+        end
+    end
+    for parte in pairs(partesOriginales) do
+        if not parte.Parent then partesOriginales[parte] = nil end
+    end
+
+    if cantidad == 0 then
+        lblMobs.Text = "Mobs: 0"
+    elseif cercano <= DISTANCIA_ALERTA then
+        lblMobs.Text = "¡Mob cerca! " .. math.floor(cercano) .. " studs (" .. cantidad .. " mobs)"
+    else
+        lblMobs.Text = "Mobs: " .. cantidad .. " | más cerca: " .. math.floor(cercano) .. " studs"
+    end
+end))
+
+----------------------------------------------------------------
 -- PERSONAJE: al iniciar y al reaparecer
 ----------------------------------------------------------------
 local function prepararPersonaje(char)
@@ -475,9 +603,11 @@ local function cerrar()
     autoRegreso = false
     vehiculoActivo = false
     invencible = false
+    antiMobs = false
     for _, c in ipairs(conexiones) do c:Disconnect() end
     conexiones = {}
     restaurarAsientos()
+    restaurarMobs()
     aplicarInvencible()
     local hum = getHumanoid()
     if hum then hum.WalkSpeed = VELOCIDAD_NORMAL end
