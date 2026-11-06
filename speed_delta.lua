@@ -105,7 +105,7 @@ local function getHRP()
 end
 
 ----------------------------------------------------------------
--- INTERFAZ
+-- INTERFAZ (estilo terminal hacker)
 ----------------------------------------------------------------
 local guiParent = (gethui and gethui()) or game:GetService("CoreGui")
 pcall(function()
@@ -116,155 +116,321 @@ end)
 local gui = Instance.new("ScreenGui")
 gui.Name = "SpeedHubGui"
 gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = guiParent
 
-local ALTO_PANEL = 380
+-- Paleta
+local FONDO     = Color3.fromRGB(6, 9, 10)
+local TARJETA   = Color3.fromRGB(12, 17, 18)
+local BOTON     = Color3.fromRGB(16, 24, 25)
+local NEON      = Color3.fromRGB(0, 255, 140)
+local NEON_DIM  = Color3.fromRGB(0, 110, 65)
+local CIAN      = Color3.fromRGB(0, 220, 255)
+local TEXTO     = Color3.fromRGB(190, 255, 215)
+local TENUE     = Color3.fromRGB(90, 140, 110)
+local ON_FONDO  = Color3.fromRGB(0, 60, 35)
+local OFF_FONDO = Color3.fromRGB(45, 12, 18)
+local OFF_TEXTO = Color3.fromRGB(255, 85, 100)
+local FUENTE    = Enum.Font.Code
 
+local ANCHO_PANEL  = 250
+local ALTO_PANEL   = 420
+local ALTO_HEADER  = 46
+local ALTO_ESTADO  = 26
+
+local function esquina(obj, r)
+    Instance.new("UICorner", obj).CornerRadius = UDim.new(0, r or 6)
+end
+
+local function borde(obj, color, grosor, transp)
+    local s = Instance.new("UIStroke")
+    s.Color = color
+    s.Thickness = grosor or 1
+    s.Transparency = transp or 0
+    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    s.Parent = obj
+    return s
+end
+
+-- Marco principal
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 220, 0, ALTO_PANEL)
+frame.Size = UDim2.new(0, ANCHO_PANEL, 0, ALTO_PANEL)
 frame.Position = UDim2.new(0, 20, 0.1, 0)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+frame.BackgroundColor3 = FONDO
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 frame.ClipsDescendants = true
 frame.Parent = gui
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+esquina(frame, 10)
+borde(frame, NEON, 1.5)
 
-local GRIS  = Color3.fromRGB(60, 60, 70)
-local ROJO  = Color3.fromRGB(170, 40, 40)
-local VERDE = Color3.fromRGB(40, 170, 70)
-local AZUL  = Color3.fromRGB(0, 200, 255)
-local CLARO = Color3.fromRGB(200, 200, 200)
+local degradado = Instance.new("UIGradient")
+degradado.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(150, 190, 170))
+degradado.Rotation = 90
+degradado.Parent = frame
 
--- Contenido con scroll (debajo del título)
-local contenido = Instance.new("ScrollingFrame")
-contenido.Size = UDim2.new(1, 0, 1, -40)
-contenido.Position = UDim2.new(0, 0, 0, 40)
-contenido.BackgroundTransparency = 1
-contenido.BorderSizePixel = 0
-contenido.ScrollBarThickness = 4
-contenido.ScrollingDirection = Enum.ScrollingDirection.Y
-contenido.CanvasSize = UDim2.new(0, 0, 0, 460)
-contenido.Parent = frame
+-- Encabezado
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, ALTO_HEADER)
+header.BackgroundTransparency = 1
+header.Parent = frame
 
-local function crearLabel(texto, y, color, tam, padre)
-    local l = Instance.new("TextLabel")
-    l.Size = UDim2.new(1, -20, 0, 20)
-    l.Position = UDim2.new(0, 10, 0, y)
-    l.BackgroundTransparency = 1
-    l.TextColor3 = color or Color3.new(1, 1, 1)
-    l.Font = Enum.Font.GothamBold
-    l.TextSize = tam or 14
-    l.TextXAlignment = Enum.TextXAlignment.Left
-    l.TextTruncate = Enum.TextTruncate.AtEnd
-    l.Text = texto
-    l.Parent = padre or contenido
-    return l
-end
+local titulo = Instance.new("TextLabel")
+titulo.Size = UDim2.new(1, -90, 0, 22)
+titulo.Position = UDim2.new(0, 12, 0, 5)
+titulo.BackgroundTransparency = 1
+titulo.Font = FUENTE
+titulo.TextSize = 18
+titulo.TextColor3 = NEON
+titulo.TextXAlignment = Enum.TextXAlignment.Left
+titulo.Text = "> SPEED_HUB_"
+titulo.Parent = header
 
-local function crearBoton(texto, x, y, w, h, color, padre)
+local subtitulo = Instance.new("TextLabel")
+subtitulo.Size = UDim2.new(1, -90, 0, 14)
+subtitulo.Position = UDim2.new(0, 12, 0, 26)
+subtitulo.BackgroundTransparency = 1
+subtitulo.Font = FUENTE
+subtitulo.TextSize = 11
+subtitulo.TextColor3 = TENUE
+subtitulo.TextXAlignment = Enum.TextXAlignment.Left
+subtitulo.Text = "root@delta:~$ online"
+subtitulo.Parent = header
+
+local function botonHeader(texto, x, color)
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, w, 0, h)
-    b.Position = UDim2.new(0, x, 0, y)
-    b.BackgroundColor3 = color
-    b.TextColor3 = Color3.new(1, 1, 1)
-    b.Font = Enum.Font.GothamBold
-    b.TextSize = 13
+    b.Size = UDim2.new(0, 28, 0, 28)
+    b.Position = UDim2.new(1, x, 0, 9)
+    b.BackgroundColor3 = BOTON
+    b.Font = FUENTE
+    b.TextSize = 16
+    b.TextColor3 = color
     b.Text = texto
-    b.Parent = padre or contenido
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+    b.AutoButtonColor = true
+    b.Parent = header
+    esquina(b, 6)
+    borde(b, color, 1)
     return b
 end
 
-local function crearCaja(texto, x, y, w, h, placeholder)
-    local t = Instance.new("TextBox")
-    t.Size = UDim2.new(0, w, 0, h)
-    t.Position = UDim2.new(0, x, 0, y)
-    t.BackgroundColor3 = GRIS
-    t.TextColor3 = Color3.new(1, 1, 1)
-    t.PlaceholderText = placeholder
-    t.Font = Enum.Font.GothamBold
-    t.TextSize = 14
-    t.ClearTextOnFocus = false
-    t.Text = texto
+local btnMin    = botonHeader("–", -72, NEON)
+local btnCerrar = botonHeader("X", -38, OFF_TEXTO)
+
+local linea = Instance.new("Frame")
+linea.Size = UDim2.new(1, -24, 0, 1)
+linea.Position = UDim2.new(0, 12, 0, ALTO_HEADER - 1)
+linea.BackgroundColor3 = NEON_DIM
+linea.BorderSizePixel = 0
+linea.Parent = frame
+
+-- Cursor que parpadea en el título
+task.spawn(function()
+    local visible = true
+    while gui.Parent do
+        visible = not visible
+        titulo.Text = visible and "> SPEED_HUB_" or "> SPEED_HUB "
+        task.wait(0.5)
+    end
+end)
+
+-- Contenido con scroll
+local contenido = Instance.new("ScrollingFrame")
+contenido.Size = UDim2.new(1, 0, 1, -(ALTO_HEADER + ALTO_ESTADO))
+contenido.Position = UDim2.new(0, 0, 0, ALTO_HEADER)
+contenido.BackgroundTransparency = 1
+contenido.BorderSizePixel = 0
+contenido.ScrollBarThickness = 3
+contenido.ScrollBarImageColor3 = NEON
+contenido.ScrollingDirection = Enum.ScrollingDirection.Y
+contenido.CanvasSize = UDim2.new(0, 0, 0, 0)
+contenido.AutomaticCanvasSize = Enum.AutomaticSize.Y
+contenido.Parent = frame
+
+local lista = Instance.new("UIListLayout")
+lista.Padding = UDim.new(0, 8)
+lista.SortOrder = Enum.SortOrder.LayoutOrder
+lista.Parent = contenido
+
+local relleno = Instance.new("UIPadding")
+relleno.PaddingTop = UDim.new(0, 8)
+relleno.PaddingBottom = UDim.new(0, 8)
+relleno.PaddingLeft = UDim.new(0, 8)
+relleno.PaddingRight = UDim.new(0, 8)
+relleno.Parent = contenido
+
+-- Barra de estado (abajo)
+local barraEstado = Instance.new("Frame")
+barraEstado.Size = UDim2.new(1, 0, 0, ALTO_ESTADO)
+barraEstado.Position = UDim2.new(0, 0, 1, -ALTO_ESTADO)
+barraEstado.BackgroundColor3 = Color3.fromRGB(3, 5, 6)
+barraEstado.BorderSizePixel = 0
+barraEstado.Parent = frame
+
+local lblEstado = Instance.new("TextLabel")
+lblEstado.Size = UDim2.new(1, -20, 1, 0)
+lblEstado.Position = UDim2.new(0, 10, 0, 0)
+lblEstado.BackgroundTransparency = 1
+lblEstado.Font = FUENTE
+lblEstado.TextSize = 12
+lblEstado.TextColor3 = NEON
+lblEstado.TextXAlignment = Enum.TextXAlignment.Left
+lblEstado.TextTruncate = Enum.TextTruncate.AtEnd
+lblEstado.Text = "> listo"
+lblEstado.Parent = barraEstado
+
+-- Piezas
+local ordenTarjeta = 0
+local function crearTarjeta(numero, nombre, alto)
+    ordenTarjeta = ordenTarjeta + 1
+    local t = Instance.new("Frame")
+    t.Size = UDim2.new(1, 0, 0, alto)
+    t.BackgroundColor3 = TARJETA
+    t.BorderSizePixel = 0
+    t.LayoutOrder = ordenTarjeta
     t.Parent = contenido
-    Instance.new("UICorner", t).CornerRadius = UDim.new(0, 8)
+    esquina(t, 8)
+    borde(t, NEON_DIM, 1)
+
+    local acento = Instance.new("Frame")
+    acento.Size = UDim2.new(0, 3, 1, -16)
+    acento.Position = UDim2.new(0, 0, 0, 8)
+    acento.BackgroundColor3 = NEON
+    acento.BorderSizePixel = 0
+    acento.Parent = t
+
+    local cab = Instance.new("TextLabel")
+    cab.Size = UDim2.new(1, -24, 0, 18)
+    cab.Position = UDim2.new(0, 12, 0, 6)
+    cab.BackgroundTransparency = 1
+    cab.Font = FUENTE
+    cab.TextSize = 13
+    cab.TextColor3 = CIAN
+    cab.TextXAlignment = Enum.TextXAlignment.Left
+    cab.Text = "[" .. numero .. "] " .. nombre
+    cab.Parent = t
     return t
 end
 
--- Título, minimizar y cerrar (fijos arriba)
-local titulo = crearLabel("Speed Hub", 10, AZUL, 16, frame)
-titulo.Size = UDim2.new(1, -90, 0, 20)
-local btnMin    = crearBoton("–", 154, 7, 26, 26, GRIS, frame)
-local btnCerrar = crearBoton("X", 186, 7, 26, 26, ROJO, frame)
+local function crearLabel(texto, y, padre, color, tam)
+    local l = Instance.new("TextLabel")
+    l.Size = UDim2.new(1, -24, 0, 18)
+    l.Position = UDim2.new(0, 12, 0, y)
+    l.BackgroundTransparency = 1
+    l.Font = FUENTE
+    l.TextSize = tam or 13
+    l.TextColor3 = color or TEXTO
+    l.TextXAlignment = Enum.TextXAlignment.Left
+    l.TextTruncate = Enum.TextTruncate.AtEnd
+    l.Text = texto
+    l.Parent = padre
+    return l
+end
 
--- Velocidad
-crearLabel("VELOCIDAD", 0, AZUL, 12)
-local lblVel     = crearLabel("Velocidad: 16", 18)
-local btnToggle  = crearBoton("OFF", 10, 42, 70, 30, ROJO)
-local txtVel     = crearCaja(tostring(VELOCIDAD_ELEGIDA), 86, 42, 76, 30, "Ej: 200")
-local btnAplicar = crearBoton("OK", 168, 42, 42, 30, VERDE)
+local function crearBoton(texto, x, y, w, h, padre)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0, w, 0, h)
+    b.Position = UDim2.new(0, x, 0, y)
+    b.BackgroundColor3 = BOTON
+    b.Font = FUENTE
+    b.TextSize = 12
+    b.TextColor3 = TEXTO
+    b.Text = texto
+    b.AutoButtonColor = true
+    b.Parent = padre
+    esquina(b, 6)
+    borde(b, NEON_DIM, 1)
+    return b
+end
 
--- Teletransporte
-crearLabel("TELETRANSPORTE", 82, AZUL, 12)
-local btnGuardarOrigen = crearBoton("Guardar origen", 10, 104, 97, 30, GRIS)
-local btnVolverOrigen  = crearBoton("Volver origen", 113, 104, 97, 30, GRIS)
-local btnGuardarPunto  = crearBoton("Guardar punto", 10, 140, 97, 30, GRIS)
-local btnIrPunto       = crearBoton("Ir a punto",    113, 140, 97, 30, GRIS)
-local btnIrMedio       = crearBoton("Ir al medio",   10, 176, 97, 30, GRIS)
-local btnAuto          = crearBoton("Auto: OFF",     113, 176, 97, 30, ROJO)
+local function crearCaja(texto, x, y, w, h, placeholder, padre)
+    local c = Instance.new("TextBox")
+    c.Size = UDim2.new(0, w, 0, h)
+    c.Position = UDim2.new(0, x, 0, y)
+    c.BackgroundColor3 = Color3.fromRGB(4, 7, 8)
+    c.Font = FUENTE
+    c.TextSize = 14
+    c.TextColor3 = NEON
+    c.PlaceholderText = placeholder
+    c.PlaceholderColor3 = TENUE
+    c.ClearTextOnFocus = false
+    c.Text = texto
+    c.Parent = padre
+    esquina(c, 6)
+    borde(c, NEON, 1, 0.3)
+    return c
+end
 
--- Vehículo
-crearLabel("VEHÍCULO (motos y carros)", 216, AZUL, 12)
-local lblManejando = crearLabel("Manejando: ninguno", 234, CLARO, 12)
-local lblVehVel    = crearLabel("Ahora: 0 km/h | Meta: " .. metaKmh, 252, Color3.new(1, 1, 1), 13)
-local btnPrev      = crearBoton("<", 10, 276, 30, 34, GRIS)
+-- Botón ON/OFF con colores de estado
+local function estiloToggle(b, encendido, textoOn, textoOff)
+    b.Text = encendido and textoOn or textoOff
+    b.BackgroundColor3 = encendido and ON_FONDO or OFF_FONDO
+    b.TextColor3 = encendido and NEON or OFF_TEXTO
+    local s = b:FindFirstChildOfClass("UIStroke")
+    if s then s.Color = encendido and NEON or OFF_TEXTO end
+end
+
+-- [01] Velocidad
+local tVel = crearTarjeta("01", "VELOCIDAD", 96)
+local lblVel     = crearLabel("WALKSPEED: 16", 28, tVel)
+local btnToggle  = crearBoton("OFF", 12, 54, 64, 32, tVel)
+local txtVel     = crearCaja(tostring(VELOCIDAD_ELEGIDA), 82, 54, 86, 32, "ej: 200", tVel)
+local btnAplicar = crearBoton("OK", 174, 54, 44, 32, tVel)
+
+-- [02] Teletransporte
+local tTp = crearTarjeta("02", "TELETRANSPORTE", 146)
+local btnGuardarOrigen = crearBoton("Guardar origen", 12, 30, 100, 32, tTp)
+local btnVolverOrigen  = crearBoton("Volver origen", 118, 30, 100, 32, tTp)
+local btnGuardarPunto  = crearBoton("Guardar punto", 12, 68, 100, 32, tTp)
+local btnIrPunto       = crearBoton("Ir a punto",    118, 68, 100, 32, tTp)
+local btnIrMedio       = crearBoton("Ir al medio",   12, 106, 100, 32, tTp)
+local btnAuto          = crearBoton("AUTO: OFF",     118, 106, 100, 32, tTp)
+
+-- [03] Vehículo
+local tVeh = crearTarjeta("03", "VEHÍCULO // motos y carros", 158)
+local lblManejando = crearLabel("Manejando: ninguno", 28, tVeh, TENUE, 12)
+local lblVehVel    = crearLabel("Ahora: 0 km/h | Meta: " .. metaKmh, 46, tVeh, TEXTO, 13)
+local btnPrev      = crearBoton("<", 12, 70, 30, 38, tVeh)
 
 local lblPreset = Instance.new("TextLabel")
-lblPreset.Size = UDim2.new(0, 132, 0, 34)
-lblPreset.Position = UDim2.new(0, 44, 0, 276)
-lblPreset.BackgroundColor3 = GRIS
-lblPreset.TextColor3 = Color3.new(1, 1, 1)
-lblPreset.Font = Enum.Font.GothamBold
+lblPreset.Size = UDim2.new(0, 132, 0, 38)
+lblPreset.Position = UDim2.new(0, 47, 0, 70)
+lblPreset.BackgroundColor3 = Color3.fromRGB(4, 7, 8)
+lblPreset.Font = FUENTE
 lblPreset.TextSize = 11
+lblPreset.TextColor3 = NEON
 lblPreset.TextWrapped = true
-lblPreset.Parent = contenido
-Instance.new("UICorner", lblPreset).CornerRadius = UDim.new(0, 8)
+lblPreset.Parent = tVeh
+esquina(lblPreset, 6)
+borde(lblPreset, NEON, 1, 0.3)
 
-local btnNext     = crearBoton(">", 180, 276, 30, 34, GRIS)
-local btnVeh      = crearBoton("OFF", 10, 316, 70, 30, ROJO)
-local txtVeh      = crearCaja("", 86, 316, 76, 30, "km/h")
-local btnVehOK    = crearBoton("OK", 168, 316, 42, 30, VERDE)
+local btnNext   = crearBoton(">", 184, 70, 34, 38, tVeh)
+local btnVeh    = crearBoton("OFF", 12, 116, 64, 32, tVeh)
+local txtVeh    = crearCaja("", 82, 116, 86, 32, "km/h", tVeh)
+local btnVehOK  = crearBoton("OK", 174, 116, 44, 32, tVeh)
+btnPrev.TextSize = 16
+btnNext.TextSize = 16
 
--- Extra
-crearLabel("EXTRA", 356, AZUL, 12)
-local btnInvencible = crearBoton("Invencible: OFF", 10, 374, 97, 30, ROJO)
-local btnAntiMobs   = crearBoton("Anti-mobs: OFF",  113, 374, 97, 30, ROJO)
-btnInvencible.TextSize = 12
-btnAntiMobs.TextSize = 12
-local lblMobs = crearLabel("Mobs: -", 410, CLARO, 12)
-
--- Estado
-local lblEstado = crearLabel("Listo", 432, CLARO, 12)
+-- [04] Extra
+local tExtra = crearTarjeta("04", "EXTRA", 92)
+local btnInvencible = crearBoton("INVENCIBLE: OFF", 12, 30, 100, 32, tExtra)
+local btnAntiMobs   = crearBoton("ANTI-MOBS: OFF", 118, 30, 100, 32, tExtra)
+btnInvencible.TextSize = 11
+btnAntiMobs.TextSize = 11
+local lblMobs = crearLabel("Mobs: -", 68, tExtra, TENUE, 12)
 
 local function setEstado(texto)
-    lblEstado.Text = texto
+    lblEstado.Text = "> " .. texto
 end
 
 local function actualizarUI()
-    lblVel.Text = "Velocidad: " .. (activo and VELOCIDAD_ELEGIDA or VELOCIDAD_NORMAL)
-    btnToggle.Text = activo and "ON" or "OFF"
-    btnToggle.BackgroundColor3 = activo and VERDE or ROJO
-    btnAuto.Text = autoRegreso and "Auto: ON" or "Auto: OFF"
-    btnAuto.BackgroundColor3 = autoRegreso and VERDE or ROJO
+    lblVel.Text = "WALKSPEED: " .. (activo and VELOCIDAD_ELEGIDA or VELOCIDAD_NORMAL)
+    estiloToggle(btnToggle, activo, "ON", "OFF")
+    estiloToggle(btnAuto, autoRegreso, "AUTO: ON", "AUTO: OFF")
     lblPreset.Text = nombreMeta .. "\n" .. metaKmh .. " km/h"
-    btnVeh.Text = vehiculoActivo and "ON" or "OFF"
-    btnVeh.BackgroundColor3 = vehiculoActivo and VERDE or ROJO
-    btnInvencible.Text = invencible and "Invencible: ON" or "Invencible: OFF"
-    btnInvencible.BackgroundColor3 = invencible and VERDE or ROJO
-    btnAntiMobs.Text = antiMobs and "Anti-mobs: ON" or "Anti-mobs: OFF"
-    btnAntiMobs.BackgroundColor3 = antiMobs and VERDE or ROJO
+    estiloToggle(btnVeh, vehiculoActivo, "ON", "OFF")
+    estiloToggle(btnInvencible, invencible, "INVENCIBLE: ON", "INVENCIBLE: OFF")
+    estiloToggle(btnAntiMobs, antiMobs, "ANTI-MOBS: ON", "ANTI-MOBS: OFF")
 end
 
 -- Minimizar
@@ -272,7 +438,9 @@ local minimizado = false
 btnMin.MouseButton1Click:Connect(function()
     minimizado = not minimizado
     contenido.Visible = not minimizado
-    frame.Size = UDim2.new(0, 220, 0, minimizado and 40 or ALTO_PANEL)
+    barraEstado.Visible = not minimizado
+    linea.Visible = not minimizado
+    frame.Size = UDim2.new(0, ANCHO_PANEL, 0, minimizado and ALTO_HEADER or ALTO_PANEL)
     btnMin.Text = minimizado and "+" or "–"
 end)
 
