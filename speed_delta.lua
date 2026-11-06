@@ -4,10 +4,10 @@
     Módulos del panel:
 
     VELOCIDAD
-      - Al ejecutar el script ya arranca en ON: la velocidad sube
-        sola hasta la máxima, sin tocar nada.
-      - ON/OFF: apaga o vuelve a prender la subida.
-      - + / - : cambia la velocidad máxima (límite 1000).
+      - Escribe la velocidad que quieras (por ejemplo 100, 200, 300)
+        y pulsa OK o Enter. Se aplica de una vez, sin ir subiendo.
+      - ON/OFF: activa o quita la velocidad (OFF = normal, 16).
+      - Límite: 1000.
 
     TELETRANSPORTE
       - Guardar origen : guarda dónde estás (tu base).
@@ -18,35 +18,36 @@
       Si vas a un punto o al medio sin haber guardado origen,
       el origen se guarda solo en el lugar donde estabas.
 
+    AUTO-REGRESO
+      - Cuando está en ON y agarras un objeto (Tool),
+        te teletransporta solo al origen.
+
     VEHÍCULO (auto / moto)
       - Cuando te subes a un vehículo y aceleras, lo empuja
         hasta la velocidad elegida.
       - ON/OFF y + / - para cambiar la velocidad (límite 1000).
 
-    AUTO-REGRESO
-      - Cuando está en ON y agarras un objeto (Tool),
-        te teletransporta solo al origen.
+    INVENCIBLE
+      - Rellena tu vida apenas baja y evita que el personaje muera.
+      - Solo funciona en juegos donde el daño se maneja en tu
+        pantalla; si el servidor controla la vida, no tiene efecto.
 
-    X: cierra todo y vuelve a la velocidad normal.
+    X: cierra todo y deja el personaje normal.
 ]]
 
 ----------------------------------------------------------------
 -- CONFIGURACIÓN
 ----------------------------------------------------------------
-local VELOCIDAD_NORMAL  = 16    -- velocidad por defecto de Roblox
-local VELOCIDAD_INICIAL = 20    -- desde dónde empieza a subir
-local VELOCIDAD_MAXIMA  = 1000  -- hasta dónde llega
-local LIMITE_MAXIMA     = 1000  -- tope de los botones +
-local INCREMENTO        = 10    -- cuánto sube en cada paso
-local INTERVALO         = 0.1   -- segundos entre cada subida
-local PASO_MAXIMA       = 50    -- cuánto cambian los botones + / -
-local ALTURA_TP         = 3     -- cuántos studs por encima del punto apareces
-local ACTIVAR_AL_INICIAR = true -- true: la velocidad arranca sola al ejecutar
+local VELOCIDAD_NORMAL   = 16    -- velocidad por defecto de Roblox
+local VELOCIDAD_ELEGIDA  = 100   -- velocidad que aparece escrita al iniciar
+local LIMITE_VELOCIDAD   = 1000  -- máximo que se puede escribir
+local ACTIVAR_AL_INICIAR = true  -- true: la velocidad elegida se aplica al ejecutar
+local ALTURA_TP          = 3     -- cuántos studs por encima del punto apareces
 
-local VEL_VEHICULO      = 200   -- velocidad del auto/moto (studs por segundo)
-local LIMITE_VEHICULO   = 1000  -- tope de los botones +
-local PASO_VEHICULO     = 50    -- cuánto cambian los botones + / -
-local ACELERACION_VEH   = 2     -- qué tan rápido llega a la velocidad (más = más brusco)
+local VEL_VEHICULO        = 200  -- velocidad del auto/moto (studs por segundo)
+local LIMITE_VEHICULO     = 1000 -- tope de los botones +
+local PASO_VEHICULO       = 50   -- cuánto cambian los botones + / -
+local ACELERACION_VEH     = 2    -- qué tan rápido llega a la velocidad (más = más brusco)
 local VEHICULO_AL_INICIAR = true -- true: el módulo de vehículo arranca en ON
 
 ----------------------------------------------------------------
@@ -63,14 +64,14 @@ local Players    = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local player     = Players.LocalPlayer
 
-local activo          = false
-local velocidadActual = VELOCIDAD_NORMAL
-local acumulado       = 0
-local autoRegreso     = false
-local origen          = nil   -- Vector3
-local punto           = nil   -- Vector3
-local conexiones      = {}
-local vistos          = setmetatable({}, { __mode = "k" })
+local activo         = false
+local autoRegreso    = false
+local vehiculoActivo = false
+local invencible     = false
+local origen         = nil   -- Vector3
+local punto          = nil   -- Vector3
+local conexiones     = {}
+local vistos         = setmetatable({}, { __mode = "k" })
 
 local function getHumanoid()
     local char = player.Character
@@ -97,8 +98,8 @@ gui.ResetOnSpawn = false
 gui.Parent = guiParent
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 220, 0, 385)
-frame.Position = UDim2.new(0, 20, 0.25, 0)
+frame.Size = UDim2.new(0, 220, 0, 420)
+frame.Position = UDim2.new(0, 20, 0.15, 0)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -146,32 +147,45 @@ local btnCerrar = crearBoton("X", 186, 6, 26, 26, ROJO)
 -- Velocidad
 crearLabel("VELOCIDAD", 38, AZUL, 12)
 local lblVel = crearLabel("Velocidad: 16", 56)
-local lblMax = crearLabel("Máxima: " .. VELOCIDAD_MAXIMA, 76)
-local btnToggle = crearBoton("OFF", 10, 100, 104, 34, ROJO)
-local btnMenos  = crearBoton("-",   120, 100, 42, 34, GRIS)
-local btnMas    = crearBoton("+",   168, 100, 42, 34, GRIS)
+local btnToggle = crearBoton("OFF", 10, 80, 70, 30, ROJO)
+
+local txtVel = Instance.new("TextBox")
+txtVel.Size = UDim2.new(0, 76, 0, 30)
+txtVel.Position = UDim2.new(0, 86, 0, 80)
+txtVel.BackgroundColor3 = GRIS
+txtVel.TextColor3 = Color3.new(1, 1, 1)
+txtVel.PlaceholderText = "Ej: 200"
+txtVel.Font = Enum.Font.GothamBold
+txtVel.TextSize = 14
+txtVel.ClearTextOnFocus = false
+txtVel.Text = tostring(VELOCIDAD_ELEGIDA)
+txtVel.Parent = frame
+Instance.new("UICorner", txtVel).CornerRadius = UDim.new(0, 8)
+
+local btnAplicar = crearBoton("OK", 168, 80, 42, 30, VERDE)
 
 -- Teletransporte
-crearLabel("TELETRANSPORTE", 144, AZUL, 12)
-local btnGuardarOrigen = crearBoton("Guardar origen", 10, 166, 97, 30, GRIS)
-local btnVolverOrigen  = crearBoton("Volver origen", 113, 166, 97, 30, GRIS)
-local btnGuardarPunto  = crearBoton("Guardar punto", 10, 202, 97, 30, GRIS)
-local btnIrPunto       = crearBoton("Ir a punto",    113, 202, 97, 30, GRIS)
-local btnIrMedio       = crearBoton("Ir al medio",   10, 238, 97, 30, GRIS)
-local btnAuto          = crearBoton("Auto: OFF",     113, 238, 97, 30, ROJO)
+crearLabel("TELETRANSPORTE", 120, AZUL, 12)
+local btnGuardarOrigen = crearBoton("Guardar origen", 10, 142, 97, 30, GRIS)
+local btnVolverOrigen  = crearBoton("Volver origen", 113, 142, 97, 30, GRIS)
+local btnGuardarPunto  = crearBoton("Guardar punto", 10, 178, 97, 30, GRIS)
+local btnIrPunto       = crearBoton("Ir a punto",    113, 178, 97, 30, GRIS)
+local btnIrMedio       = crearBoton("Ir al medio",   10, 214, 97, 30, GRIS)
+local btnAuto          = crearBoton("Auto: OFF",     113, 214, 97, 30, ROJO)
 
--- Estado
 -- Vehículo
-crearLabel("VEHÍCULO (auto / moto)", 278, AZUL, 12)
-local lblVeh      = crearLabel("Vel. vehículo: " .. VEL_VEHICULO, 296)
-local btnVeh      = crearBoton("OFF", 10, 320, 104, 30, ROJO)
-local btnVehMenos = crearBoton("-",   120, 320, 42, 30, GRIS)
-local btnVehMas   = crearBoton("+",   168, 320, 42, 30, GRIS)
+crearLabel("VEHÍCULO (auto / moto)", 254, AZUL, 12)
+local lblVeh      = crearLabel("Vel. vehículo: " .. VEL_VEHICULO, 272)
+local btnVeh      = crearBoton("OFF", 10, 296, 104, 30, ROJO)
+local btnVehMenos = crearBoton("-",   120, 296, 42, 30, GRIS)
+local btnVehMas   = crearBoton("+",   168, 296, 42, 30, GRIS)
 
-local vehiculoActivo = false
+-- Invencible
+crearLabel("EXTRA", 336, AZUL, 12)
+local btnInvencible = crearBoton("Invencible: OFF", 10, 354, 200, 30, ROJO)
 
 -- Estado
-local lblEstado = crearLabel("Listo", 358, Color3.fromRGB(200, 200, 200), 12)
+local lblEstado = crearLabel("Listo", 394, Color3.fromRGB(200, 200, 200), 12)
 lblEstado.Size = UDim2.new(1, -20, 0, 20)
 
 local function setEstado(texto)
@@ -179,8 +193,7 @@ local function setEstado(texto)
 end
 
 local function actualizarUI()
-    lblVel.Text = "Velocidad: " .. math.floor(velocidadActual)
-    lblMax.Text = "Máxima: " .. VELOCIDAD_MAXIMA
+    lblVel.Text = "Velocidad: " .. (activo and VELOCIDAD_ELEGIDA or VELOCIDAD_NORMAL)
     btnToggle.Text = activo and "ON" or "OFF"
     btnToggle.BackgroundColor3 = activo and VERDE or ROJO
     btnAuto.Text = autoRegreso and "Auto: ON" or "Auto: OFF"
@@ -188,51 +201,56 @@ local function actualizarUI()
     lblVeh.Text = "Vel. vehículo: " .. VEL_VEHICULO
     btnVeh.Text = vehiculoActivo and "ON" or "OFF"
     btnVeh.BackgroundColor3 = vehiculoActivo and VERDE or ROJO
+    btnInvencible.Text = invencible and "Invencible: ON" or "Invencible: OFF"
+    btnInvencible.BackgroundColor3 = invencible and VERDE or ROJO
 end
 
 ----------------------------------------------------------------
--- MÓDULO: VELOCIDAD
+-- MÓDULO: VELOCIDAD (se escribe, no sube sola)
 ----------------------------------------------------------------
+local function aplicarVelocidad()
+    local hum = getHumanoid()
+    if hum then
+        hum.WalkSpeed = activo and VELOCIDAD_ELEGIDA or VELOCIDAD_NORMAL
+    end
+    actualizarUI()
+end
+
 local function setActivo(valor)
     activo = valor
-    acumulado = 0
-    velocidadActual = activo and VELOCIDAD_INICIAL or VELOCIDAD_NORMAL
-    local hum = getHumanoid()
-    if hum then hum.WalkSpeed = velocidadActual end
-    actualizarUI()
+    aplicarVelocidad()
+end
+
+local function leerTexto()
+    local n = tonumber(txtVel.Text)
+    if not n then
+        setEstado("Escribe solo números, ej: 200")
+        txtVel.Text = tostring(VELOCIDAD_ELEGIDA)
+        return
+    end
+    n = math.clamp(math.floor(n), 1, LIMITE_VELOCIDAD)
+    VELOCIDAD_ELEGIDA = n
+    txtVel.Text = tostring(n)
+    if not activo then activo = true end
+    aplicarVelocidad()
+    setEstado("Velocidad puesta en " .. n)
 end
 
 btnToggle.MouseButton1Click:Connect(function()
     setActivo(not activo)
 end)
 
-btnMas.MouseButton1Click:Connect(function()
-    VELOCIDAD_MAXIMA = math.min(LIMITE_MAXIMA, VELOCIDAD_MAXIMA + PASO_MAXIMA)
-    actualizarUI()
+btnAplicar.MouseButton1Click:Connect(leerTexto)
+txtVel.FocusLost:Connect(function(enter)
+    if enter then leerTexto() end
 end)
 
-btnMenos.MouseButton1Click:Connect(function()
-    VELOCIDAD_MAXIMA = math.max(VELOCIDAD_INICIAL, VELOCIDAD_MAXIMA - PASO_MAXIMA)
-    if velocidadActual > VELOCIDAD_MAXIMA then velocidadActual = VELOCIDAD_MAXIMA end
-    actualizarUI()
-end)
-
-table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
+-- Mantiene la velocidad elegida si el juego la cambia
+table.insert(conexiones, RunService.Heartbeat:Connect(function()
     if not activo then return end
     local hum = getHumanoid()
-    if not hum then return end
-
-    acumulado = acumulado + dt
-    if acumulado >= INTERVALO then
-        acumulado = 0
-        if velocidadActual < VELOCIDAD_MAXIMA then
-            velocidadActual = math.min(velocidadActual + INCREMENTO, VELOCIDAD_MAXIMA)
-            actualizarUI()
-        end
-    end
-
-    if hum.WalkSpeed ~= velocidadActual then
-        hum.WalkSpeed = velocidadActual
+    if hum and hum.WalkSpeed ~= VELOCIDAD_ELEGIDA then
+        hum.WalkSpeed = VELOCIDAD_ELEGIDA
     end
 end))
 
@@ -336,26 +354,6 @@ local function vigilar(contenedor)
     table.insert(conexiones, contenedor.ChildAdded:Connect(alAgregarObjeto))
 end
 
-local function prepararPersonaje(char)
-    vigilar(char)
-    vigilar(player:WaitForChild("Backpack", 5))
-end
-
-if player.Character then
-    task.spawn(prepararPersonaje, player.Character)
-end
-
--- Al reaparecer: vigila el nuevo personaje y reinicia la rampa
-table.insert(conexiones, player.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid")
-    prepararPersonaje(char)
-    if activo then
-        velocidadActual = VELOCIDAD_INICIAL
-        acumulado = 0
-        actualizarUI()
-    end
-end))
-
 ----------------------------------------------------------------
 -- MÓDULO: VEHÍCULO (auto / moto)
 ----------------------------------------------------------------
@@ -424,15 +422,63 @@ table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
 end))
 
 ----------------------------------------------------------------
+-- MÓDULO: INVENCIBLE
+----------------------------------------------------------------
+local function aplicarInvencible()
+    local hum = getHumanoid()
+    if not hum then return end
+    pcall(function()
+        hum:SetStateEnabled(Enum.HumanoidStateType.Dead, not invencible)
+    end)
+    if invencible and hum.Health > 0 then
+        hum.Health = hum.MaxHealth
+    end
+end
+
+btnInvencible.MouseButton1Click:Connect(function()
+    invencible = not invencible
+    aplicarInvencible()
+    setEstado(invencible and "Invencible activado" or "Invencible apagado")
+    actualizarUI()
+end)
+
+table.insert(conexiones, RunService.Heartbeat:Connect(function()
+    if not invencible then return end
+    local hum = getHumanoid()
+    if hum and hum.Health > 0 and hum.Health < hum.MaxHealth then
+        hum.Health = hum.MaxHealth
+    end
+end))
+
+----------------------------------------------------------------
+-- PERSONAJE: al iniciar y al reaparecer
+----------------------------------------------------------------
+local function prepararPersonaje(char)
+    char:WaitForChild("Humanoid", 5)
+    vigilar(char)
+    vigilar(player:WaitForChild("Backpack", 5))
+    aplicarVelocidad()
+    aplicarInvencible()
+end
+
+if player.Character then
+    task.spawn(prepararPersonaje, player.Character)
+end
+
+table.insert(conexiones, player.CharacterAdded:Connect(prepararPersonaje))
+
+----------------------------------------------------------------
 -- CERRAR
 ----------------------------------------------------------------
 local function cerrar()
     activo = false
     autoRegreso = false
+    vehiculoActivo = false
+    invencible = false
     for _, c in ipairs(conexiones) do c:Disconnect() end
     conexiones = {}
-    vehiculoActivo = false
     restaurarAsientos()
+    aplicarInvencible()
     local hum = getHumanoid()
     if hum then hum.WalkSpeed = VELOCIDAD_NORMAL end
     if gui then gui:Destroy() end
@@ -443,10 +489,8 @@ _G.SpeedHubCerrar = cerrar
 btnCerrar.MouseButton1Click:Connect(cerrar)
 
 vehiculoActivo = VEHICULO_AL_INICIAR
-
-if ACTIVAR_AL_INICIAR then
-    setActivo(true)
-    setEstado("Velocidad subiendo sola")
-else
-    actualizarUI()
+activo = ACTIVAR_AL_INICIAR
+aplicarVelocidad()
+if activo then
+    setEstado("Velocidad puesta en " .. VELOCIDAD_ELEGIDA)
 end
