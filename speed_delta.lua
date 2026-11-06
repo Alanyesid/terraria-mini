@@ -7,6 +7,7 @@
     - Botones + / - para cambiar la velocidad máxima.
     - Se mantiene después de morir/reaparecer.
     - Al desactivarlo vuelve a la velocidad normal (16).
+    - Botón X para cerrar el script por completo.
 ]]
 
 ----------------------------------------------------------------
@@ -29,6 +30,7 @@ local player     = Players.LocalPlayer
 local activo          = false
 local velocidadActual = VELOCIDAD_NORMAL
 local acumulado       = 0
+local conexiones      = {}
 
 local function getHumanoid()
     local char = player.Character
@@ -91,6 +93,17 @@ local lblVel     = crearLabel("Velocidad: 16", 30)
 local lblMax     = crearLabel("Máxima: " .. VELOCIDAD_MAXIMA, 52)
 titulo.TextColor3 = Color3.fromRGB(0, 200, 255)
 
+local btnCerrar = Instance.new("TextButton")
+btnCerrar.Size = UDim2.new(0, 24, 0, 24)
+btnCerrar.Position = UDim2.new(1, -30, 0, 5)
+btnCerrar.BackgroundColor3 = Color3.fromRGB(170, 40, 40)
+btnCerrar.TextColor3 = Color3.new(1, 1, 1)
+btnCerrar.Font = Enum.Font.GothamBold
+btnCerrar.TextSize = 14
+btnCerrar.Text = "X"
+btnCerrar.Parent = frame
+Instance.new("UICorner", btnCerrar).CornerRadius = UDim.new(0, 6)
+
 local btnToggle = crearBoton("OFF", UDim2.new(0, 10, 0, 82), UDim2.new(0, 90, 0, 38), Color3.fromRGB(170, 40, 40))
 local btnMenos  = crearBoton("-",   UDim2.new(0, 108, 0, 82), UDim2.new(0, 38, 0, 38), Color3.fromRGB(60, 60, 70))
 local btnMas    = crearBoton("+",   UDim2.new(0, 152, 0, 82), UDim2.new(0, 38, 0, 38), Color3.fromRGB(60, 60, 70))
@@ -130,7 +143,7 @@ btnMenos.MouseButton1Click:Connect(function()
 end)
 
 -- Sube la velocidad gradualmente y la mantiene aplicada
-RunService.Heartbeat:Connect(function(dt)
+table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
     if not activo then return end
     local hum = getHumanoid()
     if not hum then return end
@@ -148,16 +161,25 @@ RunService.Heartbeat:Connect(function(dt)
     if hum.WalkSpeed ~= velocidadActual then
         hum.WalkSpeed = velocidadActual
     end
-end)
+end))
 
 -- Al reaparecer, reinicia la rampa si estaba activo
-player.CharacterAdded:Connect(function(char)
+table.insert(conexiones, player.CharacterAdded:Connect(function(char)
     char:WaitForChild("Humanoid")
     if activo then
         velocidadActual = VELOCIDAD_INICIAL
         acumulado = 0
         actualizarUI()
     end
+end))
+
+-- Cerrar: desconecta todo, vuelve a la velocidad normal y quita el panel
+btnCerrar.MouseButton1Click:Connect(function()
+    activo = false
+    for _, c in ipairs(conexiones) do c:Disconnect() end
+    local hum = getHumanoid()
+    if hum then hum.WalkSpeed = VELOCIDAD_NORMAL end
+    gui:Destroy()
 end)
 
 actualizarUI()
