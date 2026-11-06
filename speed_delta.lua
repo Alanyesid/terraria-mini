@@ -18,6 +18,11 @@
       Si vas a un punto o al medio sin haber guardado origen,
       el origen se guarda solo en el lugar donde estabas.
 
+    VEHÍCULO (auto / moto)
+      - Cuando te subes a un vehículo y aceleras, lo empuja
+        hasta la velocidad elegida.
+      - ON/OFF y + / - para cambiar la velocidad (límite 1000).
+
     AUTO-REGRESO
       - Cuando está en ON y agarras un objeto (Tool),
         te teletransporta solo al origen.
@@ -37,6 +42,12 @@ local INTERVALO         = 0.1   -- segundos entre cada subida
 local PASO_MAXIMA       = 50    -- cuánto cambian los botones + / -
 local ALTURA_TP         = 3     -- cuántos studs por encima del punto apareces
 local ACTIVAR_AL_INICIAR = true -- true: la velocidad arranca sola al ejecutar
+
+local VEL_VEHICULO      = 200   -- velocidad del auto/moto (studs por segundo)
+local LIMITE_VEHICULO   = 1000  -- tope de los botones +
+local PASO_VEHICULO     = 50    -- cuánto cambian los botones + / -
+local ACELERACION_VEH   = 2     -- qué tan rápido llega a la velocidad (más = más brusco)
+local VEHICULO_AL_INICIAR = true -- true: el módulo de vehículo arranca en ON
 
 ----------------------------------------------------------------
 -- SI YA HABÍA UNA COPIA ABIERTA, SE CIERRA
@@ -86,7 +97,7 @@ gui.ResetOnSpawn = false
 gui.Parent = guiParent
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 220, 0, 310)
+frame.Size = UDim2.new(0, 220, 0, 385)
 frame.Position = UDim2.new(0, 20, 0.25, 0)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 frame.BorderSizePixel = 0
@@ -150,7 +161,17 @@ local btnIrMedio       = crearBoton("Ir al medio",   10, 238, 97, 30, GRIS)
 local btnAuto          = crearBoton("Auto: OFF",     113, 238, 97, 30, ROJO)
 
 -- Estado
-local lblEstado = crearLabel("Listo", 278, Color3.fromRGB(200, 200, 200), 12)
+-- Vehículo
+crearLabel("VEHÍCULO (auto / moto)", 278, AZUL, 12)
+local lblVeh      = crearLabel("Vel. vehículo: " .. VEL_VEHICULO, 296)
+local btnVeh      = crearBoton("OFF", 10, 320, 104, 30, ROJO)
+local btnVehMenos = crearBoton("-",   120, 320, 42, 30, GRIS)
+local btnVehMas   = crearBoton("+",   168, 320, 42, 30, GRIS)
+
+local vehiculoActivo = false
+
+-- Estado
+local lblEstado = crearLabel("Listo", 358, Color3.fromRGB(200, 200, 200), 12)
 lblEstado.Size = UDim2.new(1, -20, 0, 20)
 
 local function setEstado(texto)
@@ -164,6 +185,9 @@ local function actualizarUI()
     btnToggle.BackgroundColor3 = activo and VERDE or ROJO
     btnAuto.Text = autoRegreso and "Auto: ON" or "Auto: OFF"
     btnAuto.BackgroundColor3 = autoRegreso and VERDE or ROJO
+    lblVeh.Text = "Vel. vehículo: " .. VEL_VEHICULO
+    btnVeh.Text = vehiculoActivo and "ON" or "OFF"
+    btnVeh.BackgroundColor3 = vehiculoActivo and VERDE or ROJO
 end
 
 ----------------------------------------------------------------
@@ -333,6 +357,73 @@ table.insert(conexiones, player.CharacterAdded:Connect(function(char)
 end))
 
 ----------------------------------------------------------------
+-- MÓDULO: VEHÍCULO (auto / moto)
+----------------------------------------------------------------
+local asientosOriginales = {}  -- asiento -> MaxSpeed original
+
+local function restaurarAsientos()
+    for asiento, maxOriginal in pairs(asientosOriginales) do
+        if asiento and asiento.Parent then
+            pcall(function() asiento.MaxSpeed = maxOriginal end)
+        end
+    end
+    asientosOriginales = {}
+end
+
+btnVeh.MouseButton1Click:Connect(function()
+    vehiculoActivo = not vehiculoActivo
+    if not vehiculoActivo then restaurarAsientos() end
+    setEstado(vehiculoActivo and "Vehículo rápido activado" or "Vehículo normal")
+    actualizarUI()
+end)
+
+btnVehMas.MouseButton1Click:Connect(function()
+    VEL_VEHICULO = math.min(LIMITE_VEHICULO, VEL_VEHICULO + PASO_VEHICULO)
+    actualizarUI()
+end)
+
+btnVehMenos.MouseButton1Click:Connect(function()
+    VEL_VEHICULO = math.max(PASO_VEHICULO, VEL_VEHICULO - PASO_VEHICULO)
+    actualizarUI()
+end)
+
+table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
+    if not vehiculoActivo then return end
+    local hum = getHumanoid()
+    local asiento = hum and hum.SeatPart
+    if not asiento then return end
+
+    -- Hacia dónde acelera el jugador
+    local direccion
+    if asiento:IsA("VehicleSeat") then
+        if asientosOriginales[asiento] == nil then
+            asientosOriginales[asiento] = asiento.MaxSpeed
+        end
+        asiento.MaxSpeed = VEL_VEHICULO
+        local acelerador = asiento.ThrottleFloat
+        if math.abs(acelerador) < 0.1 then return end
+        direccion = asiento.CFrame.LookVector * math.sign(acelerador)
+    else
+        -- Asiento normal: usa la dirección en la que se mueve el jugador
+        local mov = hum.MoveDirection
+        if mov.Magnitude < 0.1 then return end
+        direccion = mov.Unit
+    end
+
+    -- Empuja el vehículo en esa dirección sin tocar la caída
+    local raiz = asiento.AssemblyRootPart or asiento
+    local vel = raiz.AssemblyLinearVelocity
+    local plano = Vector3.new(direccion.X, 0, direccion.Z)
+    if plano.Magnitude < 0.01 then return end
+    plano = plano.Unit
+    local actual = vel:Dot(plano)
+    if actual < VEL_VEHICULO then
+        local nuevo = actual + (VEL_VEHICULO - actual) * math.min(1, dt * ACELERACION_VEH)
+        raiz.AssemblyLinearVelocity = vel + plano * (nuevo - actual)
+    end
+end))
+
+----------------------------------------------------------------
 -- CERRAR
 ----------------------------------------------------------------
 local function cerrar()
@@ -340,6 +431,8 @@ local function cerrar()
     autoRegreso = false
     for _, c in ipairs(conexiones) do c:Disconnect() end
     conexiones = {}
+    vehiculoActivo = false
+    restaurarAsientos()
     local hum = getHumanoid()
     if hum then hum.WalkSpeed = VELOCIDAD_NORMAL end
     if gui then gui:Destroy() end
@@ -348,6 +441,8 @@ end
 
 _G.SpeedHubCerrar = cerrar
 btnCerrar.MouseButton1Click:Connect(cerrar)
+
+vehiculoActivo = VEHICULO_AL_INICIAR
 
 if ACTIVAR_AL_INICIAR then
     setActivo(true)
