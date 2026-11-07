@@ -30,10 +30,24 @@
       - "Ahora" muestra tu velocidad. Si no coincide con el
         velocímetro del juego, ajusta KMH_POR_STUD.
 
+      - Anti-vuelco: mantiene la moto derecha para que no se caiga
+        a alta velocidad (no le quita la inclinación en subidas).
+
     EXTRA
       - Invencible: rellena tu vida y evita que el personaje muera.
       - Anti-mobs : quita el contacto de los mobs contigo.
       Ambos solo funcionan si el juego maneja eso en tu pantalla.
+      - Salto alto    : saltas más alto.
+      - Salto infinito: puedes saltar en el aire las veces que quieras.
+
+    GUARDADO AUTOMÁTICO
+      - Recuerda tu velocidad, el modelo elegido, la velocidad de cada
+        vehículo, los botones encendidos, la posición del panel y tus
+        puntos de teletransporte (por cada juego). La próxima vez que
+        ejecutes el script, todo vuelve como lo dejaste.
+      - Se guarda en el archivo SpeedHub_config.json de Delta.
+
+    El encabezado muestra los FPS y el ping.
 ]]
 
 ----------------------------------------------------------------
@@ -45,6 +59,9 @@ local LIMITE_VELOCIDAD   = 1000  -- máximo que se puede escribir
 local ACTIVAR_AL_INICIAR = true  -- true: la velocidad elegida se aplica al ejecutar
 local ALTURA_TP          = 3     -- cuántos studs por encima del punto apareces
 local DISTANCIA_ALERTA   = 30    -- a cuántos studs avisa que hay un mob cerca
+local SALTO_ALTO         = 120   -- fuerza del salto alto (normal: 50)
+local FUERZA_ANTIVUELCO  = 8     -- qué tan rápido endereza la moto (más = más firme)
+local ARCHIVO_CONFIG     = "SpeedHub_config.json"
 
 -- Vehículos
 local KMH_POR_STUD        = 0.91 -- 1 stud/s = 0.91 km/h (ajústalo si no coincide con el juego)
@@ -93,6 +110,10 @@ local origen         = nil   -- Vector3
 local punto          = nil   -- Vector3
 local conexiones     = {}
 local vistos         = setmetatable({}, { __mode = "k" })
+local antiVuelco     = false
+local saltoAlto      = false
+local saltoInfinito  = false
+local sucio          = false -- hay cambios sin guardar
 
 local indicePreset   = math.clamp(PRESET_INICIAL, 1, #PRESETS)
 local nombreMeta     = PRESETS[indicePreset][1]
@@ -100,6 +121,62 @@ local metaKmh        = PRESETS[indicePreset][2]
 local acelKmh        = PRESETS[indicePreset][3]
 local vehiculoActual = nil   -- modelo del vehículo en el que vas
 local memoria        = {}    -- nombre del vehículo -> { nombre, kmh, aceleración }
+
+----------------------------------------------------------------
+-- GUARDADO: cargar la configuración anterior
+----------------------------------------------------------------
+local HttpService = game:GetService("HttpService")
+local puedeGuardar = typeof(writefile) == "function"
+    and typeof(readfile) == "function"
+    and typeof(isfile) == "function"
+
+local function aVector(t)
+    if type(t) == "table" and type(t[1]) == "number" and type(t[2]) == "number" and type(t[3]) == "number" then
+        return Vector3.new(t[1], t[2], t[3])
+    end
+    return nil
+end
+
+local function deVector(v)
+    return v and { v.X, v.Y, v.Z } or nil
+end
+
+local config = nil
+if puedeGuardar then
+    local ok, datos = pcall(function()
+        if not isfile(ARCHIVO_CONFIG) then return nil end
+        return HttpService:JSONDecode(readfile(ARCHIVO_CONFIG))
+    end)
+    if ok and type(datos) == "table" then config = datos end
+end
+
+if config then
+    if type(config.velocidad) == "number" then
+        VELOCIDAD_ELEGIDA = math.clamp(math.floor(config.velocidad), 1, LIMITE_VELOCIDAD)
+    end
+    local p = config.preset
+    if type(p) == "table" and type(p[1]) == "number" and type(p[2]) == "string"
+        and type(p[3]) == "number" and type(p[4]) == "number" then
+        indicePreset = math.clamp(math.floor(p[1]), 1, #PRESETS)
+        nombreMeta, metaKmh, acelKmh = p[2], p[3], p[4]
+    end
+    if type(config.memoria) == "table" then
+        for nombre, v in pairs(config.memoria) do
+            if type(nombre) == "string" and type(v) == "table" and type(v[1]) == "string"
+                and type(v[2]) == "number" and type(v[3]) == "number" then
+                memoria[nombre] = { v[1], v[2], v[3] }
+            end
+        end
+    end
+    antiVuelco    = config.antiVuelco == true
+    saltoAlto     = config.saltoAlto == true
+    saltoInfinito = config.saltoInfinito == true
+    local puntos = type(config.puntos) == "table" and config.puntos[tostring(game.PlaceId)]
+    if type(puntos) == "table" then
+        origen = aVector(puntos.origen)
+        punto  = aVector(puntos.punto)
+    end
+end
 
 local function getHumanoid()
     local char = player.Character
@@ -163,6 +240,10 @@ end
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, ANCHO_PANEL, 0, ALTO_PANEL)
 frame.Position = UDim2.new(0, 20, 0.1, 0)
+if config and type(config.panel) == "table" and #config.panel == 4 then
+    local ok, pos = pcall(UDim2.new, table.unpack(config.panel))
+    if ok then frame.Position = pos end
+end
 frame.BackgroundColor3 = FONDO
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -204,6 +285,19 @@ subtitulo.TextColor3 = TENUE
 subtitulo.TextXAlignment = Enum.TextXAlignment.Left
 subtitulo.Text = "root@delta:~$ online"
 subtitulo.Parent = header
+
+-- FPS y ping en el encabezado
+local cuadros, tiempoFps = 0, 0
+table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
+    cuadros = cuadros + 1
+    tiempoFps = tiempoFps + dt
+    if tiempoFps >= 1 then
+        local ping = 0
+        pcall(function() ping = math.floor(player:GetNetworkPing() * 1000) end)
+        subtitulo.Text = "root@delta:~$ " .. cuadros .. "fps · " .. ping .. "ms"
+        cuadros, tiempoFps = 0, 0
+    end
+end))
 
 local function botonHeader(texto, x, color)
     local b = Instance.new("TextButton")
@@ -394,7 +488,7 @@ local btnIrMedio       = crearBoton("Ir al medio",   12, 106, 100, 32, tTp)
 local btnAuto          = crearBoton("AUTO: OFF",     118, 106, 100, 32, tTp)
 
 -- [03] Vehículo
-local tVeh = crearTarjeta("03", "VEHÍCULO // motos y carros", 158)
+local tVeh = crearTarjeta("03", "VEHÍCULO // motos y carros", 194)
 local lblManejando = crearLabel("Manejando: ninguno", 28, tVeh, TENUE, 12)
 local lblVehVel    = crearLabel("Ahora: 0 km/h | Meta: " .. metaKmh, 46, tVeh, TEXTO, 13)
 local btnPrev      = crearBoton("<", 12, 70, 30, 38, tVeh)
@@ -417,17 +511,23 @@ local txtVeh    = crearCaja("", 82, 116, 86, 32, "km/h", tVeh)
 local btnVehOK  = crearBoton("OK", 174, 116, 44, 32, tVeh)
 btnPrev.TextSize = 16
 btnNext.TextSize = 16
+local btnAntiVuelco = crearBoton("ANTI-VUELCO: OFF", 12, 154, 206, 30, tVeh)
 
 -- [04] Extra
-local tExtra = crearTarjeta("04", "EXTRA", 92)
+local tExtra = crearTarjeta("04", "EXTRA", 130)
 local btnInvencible = crearBoton("INVENCIBLE: OFF", 12, 30, 100, 32, tExtra)
 local btnAntiMobs   = crearBoton("ANTI-MOBS: OFF", 118, 30, 100, 32, tExtra)
 btnInvencible.TextSize = 11
 btnAntiMobs.TextSize = 11
-local lblMobs = crearLabel("Mobs: -", 68, tExtra, TENUE, 12)
+local btnSaltoAlto = crearBoton("SALTO ALTO: OFF", 12, 68, 100, 32, tExtra)
+local btnSaltoInf  = crearBoton("SALTO INF: OFF", 118, 68, 100, 32, tExtra)
+btnSaltoAlto.TextSize = 11
+btnSaltoInf.TextSize = 11
+local lblMobs = crearLabel("Mobs: -", 106, tExtra, TENUE, 12)
 
 local function setEstado(texto)
     lblEstado.Text = "> " .. texto
+    sucio = true
 end
 
 local function actualizarUI()
@@ -438,6 +538,10 @@ local function actualizarUI()
     estiloToggle(btnVeh, vehiculoActivo, "ON", "OFF")
     estiloToggle(btnInvencible, invencible, "INVENCIBLE: ON", "INVENCIBLE: OFF")
     estiloToggle(btnAntiMobs, antiMobs, "ANTI-MOBS: ON", "ANTI-MOBS: OFF")
+    estiloToggle(btnAntiVuelco, antiVuelco, "ANTI-VUELCO: ON", "ANTI-VUELCO: OFF")
+    estiloToggle(btnSaltoAlto, saltoAlto, "SALTO ALTO: ON", "SALTO ALTO: OFF")
+    estiloToggle(btnSaltoInf, saltoInfinito, "SALTO INF: ON", "SALTO INF: OFF")
+    sucio = true
 end
 
 -- Minimizar
@@ -846,6 +950,87 @@ table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
 end))
 
 ----------------------------------------------------------------
+-- MÓDULO: ANTI-VUELCO (mantiene la moto derecha)
+----------------------------------------------------------------
+btnAntiVuelco.MouseButton1Click:Connect(function()
+    antiVuelco = not antiVuelco
+    setEstado(antiVuelco and "Anti-vuelco activado" or "Anti-vuelco apagado")
+    actualizarUI()
+end)
+
+local SENO_TOLERANCIA = math.sin(math.rad(3))
+
+table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
+    if not (antiVuelco and vehiculoActivo) then return end
+    local hum = getHumanoid()
+    local asiento = hum and hum.SeatPart
+    if not asiento then return end
+
+    local raiz = asiento.AssemblyRootPart or asiento
+    local cf = asiento.CFrame
+    local mira = cf.LookVector
+    if math.abs(mira.Y) > 0.95 then return end  -- apuntando casi vertical: no se puede calcular
+
+    -- Solo corrige la inclinación hacia los lados (o si está de cabeza)
+    local ladeado = math.abs(cf.RightVector.Y) > SENO_TOLERANCIA
+    local deCabeza = cf.UpVector.Y < 0
+    if not (ladeado or deCabeza) then return end
+
+    -- Misma dirección y misma subida/bajada, pero sin estar ladeada
+    local objetivo = CFrame.lookAt(cf.Position, cf.Position + mira, Vector3.yAxis)
+    local giro = (objetivo - objetivo.Position) * (cf - cf.Position):Inverse()
+    local paso = CFrame.identity:Lerp(giro, math.min(1, dt * FUERZA_ANTIVUELCO))
+    local pivote = CFrame.new(cf.Position)
+    raiz.CFrame = pivote * paso * pivote:Inverse() * raiz.CFrame
+
+    -- Quita el giro hacia los lados que la estaba tumbando
+    local av = raiz.AssemblyAngularVelocity
+    raiz.AssemblyAngularVelocity = av - mira * av:Dot(mira)
+end))
+
+----------------------------------------------------------------
+-- MÓDULO: SALTO (alto e infinito)
+----------------------------------------------------------------
+local saltoOriginal = setmetatable({}, { __mode = "k" })  -- humanoide -> fuerza original
+
+local function aplicarSalto()
+    local hum = getHumanoid()
+    if not hum then return end
+    if saltoOriginal[hum] == nil then
+        saltoOriginal[hum] = { hum.UseJumpPower, hum.JumpPower }
+    end
+    if saltoAlto then
+        hum.UseJumpPower = true
+        hum.JumpPower = SALTO_ALTO
+    else
+        local orig = saltoOriginal[hum]
+        hum.UseJumpPower = orig[1]
+        hum.JumpPower = orig[2]
+    end
+end
+
+btnSaltoAlto.MouseButton1Click:Connect(function()
+    saltoAlto = not saltoAlto
+    aplicarSalto()
+    setEstado(saltoAlto and "Salto alto activado" or "Salto normal")
+    actualizarUI()
+end)
+
+btnSaltoInf.MouseButton1Click:Connect(function()
+    saltoInfinito = not saltoInfinito
+    setEstado(saltoInfinito and "Salto infinito activado" or "Salto infinito apagado")
+    actualizarUI()
+end)
+
+table.insert(conexiones, UserInputService.JumpRequest:Connect(function()
+    if not saltoInfinito then return end
+    local hum = getHumanoid()
+    if hum and not hum.SeatPart and hum.Health > 0 then
+        hum:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end))
+
+----------------------------------------------------------------
 -- MÓDULO: INVENCIBLE
 ----------------------------------------------------------------
 local function aplicarInvencible()
@@ -994,6 +1179,7 @@ local function prepararPersonaje(char)
     vigilar(player:WaitForChild("Backpack", 5))
     aplicarVelocidad()
     aplicarInvencible()
+    aplicarSalto()
 end
 
 if player.Character then
@@ -1003,9 +1189,48 @@ end
 table.insert(conexiones, player.CharacterAdded:Connect(prepararPersonaje))
 
 ----------------------------------------------------------------
+-- GUARDADO: escribir la configuración
+----------------------------------------------------------------
+local function guardar()
+    if not puedeGuardar then return end
+    local datos = type(config) == "table" and config or {}
+    datos.velocidad     = VELOCIDAD_ELEGIDA
+    datos.activo        = activo
+    datos.vehiculoActivo = vehiculoActivo
+    datos.preset        = { indicePreset, nombreMeta, metaKmh, acelKmh }
+    datos.memoria       = memoria
+    datos.antiVuelco    = antiVuelco
+    datos.saltoAlto     = saltoAlto
+    datos.saltoInfinito = saltoInfinito
+    local pos = frame.Position
+    datos.panel = { pos.X.Scale, pos.X.Offset, pos.Y.Scale, pos.Y.Offset }
+    if type(datos.puntos) ~= "table" then datos.puntos = {} end
+    datos.puntos[tostring(game.PlaceId)] = { origen = deVector(origen), punto = deVector(punto) }
+    config = datos
+    pcall(function()
+        writefile(ARCHIVO_CONFIG, HttpService:JSONEncode(datos))
+    end)
+end
+
+-- Mover el panel también cuenta como cambio
+frame:GetPropertyChangedSignal("Position"):Connect(function() sucio = true end)
+
+-- Guarda cada 3 segundos si algo cambió
+task.spawn(function()
+    while gui.Parent do
+        task.wait(3)
+        if sucio and gui.Parent then
+            sucio = false
+            guardar()
+        end
+    end
+end)
+
+----------------------------------------------------------------
 -- CERRAR
 ----------------------------------------------------------------
 local function cerrar()
+    guardar()
     activo = false
     autoRegreso = false
     vehiculoActivo = false
@@ -1017,6 +1242,8 @@ local function cerrar()
     restaurarAsientos()
     restaurarMobs()
     aplicarInvencible()
+    saltoAlto, saltoInfinito, antiVuelco = false, false, false
+    aplicarSalto()
     local hum = getHumanoid()
     if hum then hum.WalkSpeed = VELOCIDAD_NORMAL end
     if gui then gui:Destroy() end
@@ -1026,9 +1253,19 @@ end
 _G.SpeedHubCerrar = cerrar
 btnCerrar.MouseButton1Click:Connect(cerrar)
 
+-- Arranque: usa lo guardado si existe, si no, la configuración de arriba
 vehiculoActivo = VEHICULO_AL_INICIAR
 activo = ACTIVAR_AL_INICIAR
+if config then
+    if type(config.vehiculoActivo) == "boolean" then vehiculoActivo = config.vehiculoActivo end
+    if type(config.activo) == "boolean" then activo = config.activo end
+end
+txtVel.Text = tostring(VELOCIDAD_ELEGIDA)
 aplicarVelocidad()
-if activo then
+aplicarSalto()
+if config then
+    setEstado("Configuración cargada")
+elseif activo then
     setEstado("Velocidad puesta en " .. VELOCIDAD_ELEGIDA)
 end
+sucio = false
