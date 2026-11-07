@@ -1,1117 +1,595 @@
 <!DOCTYPE html>
-<html lang="es" style="color-scheme: dark;">
+<html lang="es" style="color-scheme: dark;" data-theme="orange">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InkVault — Diseños de Tatuajes</title>
-    <meta name="theme-color" content="#09090b">
+    <title>InkVault</title>
+    <meta name="theme-color" content="#09090b" id="themeColorMeta">
     <style>
+        /* ── Themes ───────────────────────────────────────────────── */
+        :root,[data-theme="orange"] {
+            --accent: #f97316; --accent-hover: #ea580c;
+            --accent-glow: rgba(249,115,22,0.22);
+            --accent-soft: rgba(249,115,22,0.1);
+        }
+        [data-theme="blue"] {
+            --accent: #3b82f6; --accent-hover: #2563eb;
+            --accent-glow: rgba(59,130,246,0.22);
+            --accent-soft: rgba(59,130,246,0.1);
+        }
+        [data-theme="purple"] {
+            --accent: #8b5cf6; --accent-hover: #7c3aed;
+            --accent-glow: rgba(139,92,246,0.22);
+            --accent-soft: rgba(139,92,246,0.1);
+        }
+        [data-theme="pink"] {
+            --accent: #ec4899; --accent-hover: #db2777;
+            --accent-glow: rgba(236,72,153,0.22);
+            --accent-soft: rgba(236,72,153,0.1);
+        }
+        [data-theme="green"] {
+            --accent: #22c55e; --accent-hover: #16a34a;
+            --accent-glow: rgba(34,197,94,0.22);
+            --accent-soft: rgba(34,197,94,0.1);
+        }
+        [data-theme="red"] {
+            --accent: #ef4444; --accent-hover: #dc2626;
+            --accent-glow: rgba(239,68,68,0.22);
+            --accent-soft: rgba(239,68,68,0.1);
+        }
+        [data-theme="cyan"] {
+            --accent: #06b6d4; --accent-hover: #0891b2;
+            --accent-glow: rgba(6,182,212,0.22);
+            --accent-soft: rgba(6,182,212,0.1);
+        }
+        [data-theme="gold"] {
+            --accent: #eab308; --accent-hover: #ca8a04;
+            --accent-glow: rgba(234,179,8,0.22);
+            --accent-soft: rgba(234,179,8,0.1);
+        }
+
+        /* ── Base ─────────────────────────────────────────────────── */
         :root {
-            --bg: #09090b;
-            --surface: #18181b;
-            --surface-2: #27272a;
-            --border: #3f3f46;
-            --text: #fafafa;
-            --text-muted: #a1a1aa;
-            --text-subtle: #71717a;
-            --accent: #f97316;
-            --accent-hover: #ea580c;
-            --accent-glow: rgba(249, 115, 22, 0.25);
-            --red: #ef4444;
-            --green: #22c55e;
-            --radius: 12px;
-            --radius-lg: 20px;
+            --bg: #09090b; --surface: #18181b; --surface-2: #27272a;
+            --border: #3f3f46; --text: #fafafa;
+            --text-muted: #a1a1aa; --text-subtle: #71717a;
+            --red: #ef4444; --green: #22c55e;
+            --radius: 10px; --radius-lg: 16px;
+            --sidebar-w: 220px;
         }
 
-        @media (prefers-reduced-motion: no-preference) {
-            * { scroll-behavior: smooth; }
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        @media (prefers-reduced-motion: no-preference) { * { scroll-behavior: smooth; } }
+        * { margin:0; padding:0; box-sizing:border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            line-height: 1.6;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; line-height: 1.6;
+            display: flex; flex-direction: column;
         }
 
-        /* ───── Navbar ───── */
-        nav {
-            position: sticky;
-            top: 0;
-            z-index: 50;
+        /* ── Topbar ───────────────────────────────────────────────── */
+        .topbar {
+            height: 56px; display: flex; align-items: center;
+            justify-content: space-between; padding: 0 20px;
             border-bottom: 1px solid var(--border);
-            background: rgba(9, 9, 11, 0.85);
-            backdrop-filter: blur(16px);
-            padding: 0 24px;
+            background: rgba(9,9,11,0.9); backdrop-filter: blur(16px);
+            position: sticky; top:0; z-index:50; flex-shrink:0;
         }
 
-        .nav-inner {
-            max-width: 1280px;
-            margin: 0 auto;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        .logo { display:flex; align-items:center; gap:10px; font-weight:800; font-size:1.05rem; text-decoration:none; color:var(--text); }
+        .logo-box {
+            width:30px; height:30px; border-radius:8px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            display:flex; align-items:center; justify-content:center; font-size:14px;
+            transition: background 0.3s;
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 700;
-            font-size: 1.1rem;
-            color: var(--text);
-            text-decoration: none;
-        }
-
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--accent), #c2410c);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-        }
-
-        .nav-badge {
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 4px 12px;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-user {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
+        .topbar-right { display:flex; align-items:center; gap:10px; }
+        .nav-pill { background:var(--surface-2); border:1px solid var(--border); border-radius:20px; padding:3px 11px; font-size:0.78rem; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+        .nav-user { display:flex; align-items:center; gap:7px; font-size:0.82rem; color:var(--text-muted); }
         .nav-avatar {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent), #c2410c);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .btn-logout {
-            padding: 5px 12px;
-            background: transparent;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            color: var(--text-subtle);
-            font-size: 0.75rem;
-            font-family: inherit;
-            cursor: pointer;
-            transition: color 0.2s, border-color 0.2s;
-        }
-
-        .btn-logout:hover {
-            color: var(--accent);
-            border-color: var(--accent);
-        }
-
-        .btn-logout:focus-visible {
-            outline: 2px solid var(--accent);
-            outline-offset: 2px;
-        }
-
-        /* ───── Hero ───── */
-        .hero {
-            border-bottom: 1px solid var(--border);
-            padding: 72px 24px 60px;
-            text-align: center;
-            background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(249,115,22,0.12), transparent);
-        }
-
-        .hero-label {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 4px 14px;
-            font-size: 0.8rem;
-            color: var(--accent);
-            font-weight: 600;
-            margin-bottom: 24px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .hero h1 {
-            font-size: clamp(2.2rem, 5vw, 3.8rem);
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            line-height: 1.1;
-            text-wrap: balance;
-            margin-bottom: 16px;
-        }
-
-        .hero h1 span {
-            background: linear-gradient(135deg, var(--accent) 0%, #fbbf24 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero p {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            max-width: 480px;
-            margin: 0 auto;
-            text-wrap: pretty;
-        }
-
-        /* ───── Layout ───── */
-        .main {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 48px 24px 80px;
-            display: grid;
-            grid-template-columns: 400px 1fr;
-            gap: 32px;
-            align-items: start;
-        }
-
-        /* ───── Upload Panel ───── */
-        .upload-panel {
-            position: sticky;
-            top: 80px;
-        }
-
-        .panel {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 28px;
-        }
-
-        .panel-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .panel-title::before {
-            content: '';
-            display: block;
-            width: 3px;
-            height: 18px;
-            background: var(--accent);
-            border-radius: 2px;
-        }
-
-        /* ───── Drop Zone ───── */
-        .drop-zone {
-            border: 2px dashed var(--border);
-            border-radius: var(--radius);
-            padding: 32px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
-            position: relative;
-            margin-bottom: 20px;
-        }
-
-        .drop-zone:hover,
-        .drop-zone.drag-over {
-            border-color: var(--accent);
-            background: var(--accent-glow);
-        }
-
-        .drop-zone input[type="file"] {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-            width: 100%;
-            height: 100%;
-        }
-
-        .drop-icon {
-            font-size: 2.5rem;
-            margin-bottom: 12px;
-        }
-
-        .drop-text {
-            font-size: 0.95rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-        }
-
-        .drop-hint {
-            font-size: 0.8rem;
-            color: var(--text-subtle);
-        }
-
-        .preview-wrap {
-            position: relative;
-            margin-bottom: 20px;
-            border-radius: var(--radius);
-            overflow: hidden;
-            aspect-ratio: 4 / 3;
-            display: none;
-        }
-
-        .preview-wrap img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .preview-clear {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: rgba(0,0,0,0.7);
-            border: 1px solid var(--border);
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: var(--text);
-            font-size: 14px;
-            transition: background 0.2s;
-        }
-
-        .preview-clear:hover {
-            background: rgba(239,68,68,0.6);
-        }
-
-        /* ───── Form ───── */
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        label {
-            display: block;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-        }
-
-        input[type="text"],
-        textarea,
-        select {
-            width: 100%;
-            padding: 10px 14px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
-            font-family: inherit;
-            font-size: 0.9rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        input[type="text"]::placeholder,
-        textarea::placeholder {
-            color: var(--text-subtle);
-        }
-
-        input[type="text"]:focus,
-        textarea:focus,
-        select:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        select {
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2371717a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            padding-right: 32px;
-            color: var(--text);
-        }
-
-        /* ───── Buttons ───── */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
-            border: none;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .btn { transition: background 0.15s; }
-        }
-
-        .btn:focus-visible {
-            outline: 2px solid var(--accent);
-            outline-offset: 2px;
-        }
-
-        .btn-primary {
-            width: 100%;
-            background: var(--accent);
-            color: #fff;
-            padding: 12px;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 8px 24px var(--accent-glow);
-        }
-
-        .btn-primary:active:not(:disabled) {
-            transform: translateY(0);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-ghost {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            padding: 6px 12px;
-            font-size: 0.8rem;
-        }
-
-        .btn-ghost:hover {
-            background: var(--surface-2);
-            color: var(--text);
-        }
-
-        .btn-danger {
-            background: transparent;
-            border: 1px solid transparent;
-            color: var(--red);
-            font-size: 0.8rem;
-            padding: 6px 10px;
-        }
-
-        .btn-danger:hover {
-            background: rgba(239,68,68,0.1);
-            border-color: rgba(239,68,68,0.3);
-        }
-
-        .spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-            display: none;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .spinner { animation-duration: 1.5s; }
-        }
-
-        /* ───── Toast ───── */
-        .toast-wrap {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .toast {
-            padding: 12px 18px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            border: 1px solid;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.25s, transform 0.25s;
-            pointer-events: none;
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .toast { transition: opacity 0.25s; transform: none; }
-        }
-
-        .toast-success {
-            background: rgba(34,197,94,0.1);
-            border-color: rgba(34,197,94,0.3);
-            color: #86efac;
-        }
-
-        .toast-error {
-            background: rgba(239,68,68,0.1);
-            border-color: rgba(239,68,68,0.3);
-            color: #fca5a5;
-        }
-
-        /* ───── Gallery ───── */
-        .gallery-panel {}
-
-        .gallery-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-        }
-
-        .gallery-title {
-            font-size: 1rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .gallery-title::before {
-            content: '';
-            display: block;
-            width: 3px;
-            height: 18px;
-            background: var(--accent);
-            border-radius: 2px;
-        }
-
-        .count-badge {
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 2px 10px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .filter-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            overflow-x: auto;
-            padding-bottom: 6px;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border) transparent;
-        }
-
-        .filter-row::-webkit-scrollbar {
-            height: 4px;
-        }
-
-        .filter-row::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .filter-row::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 4px;
-        }
-
-        .filter-group-label {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            flex-shrink: 0;
-            font-size: 0.72rem;
-            font-weight: 700;
-            color: var(--text-subtle);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 0 4px;
-            white-space: nowrap;
-        }
-
-        .filter-sep {
-            width: 1px;
-            height: 20px;
-            background: var(--border);
-            flex-shrink: 0;
-            align-self: center;
-            margin: 0 4px;
-        }
-
-        .filter-btn {
-            padding: 6px 14px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--text-muted);
-            font-size: 0.8rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-
-        .filter-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .filter-btn.active {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: white;
-        }
-
-        .filter-btn:focus-visible {
-            outline: 2px solid var(--accent);
-            outline-offset: 2px;
-        }
-
-        /* ───── Grid ───── */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 20px;
-        }
-
-        .design-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .design-card { transition: border-color 0.2s; }
-        }
-
-        .design-card:hover {
-            transform: translateY(-4px);
-            border-color: rgba(249,115,22,0.4);
-            box-shadow: 0 16px 40px rgba(0,0,0,0.4);
-        }
-
-        .card-img-wrap {
-            position: relative;
-            aspect-ratio: 1;
-            overflow: hidden;
-            background: var(--surface-2);
-        }
-
-        .card-img-wrap img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .card-img-wrap img { transition: none; }
-        }
-
-        .design-card:hover .card-img-wrap img {
-            transform: scale(1.04);
-        }
-
-        .card-style-tag {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(6px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 20px;
-            padding: 3px 10px;
-            font-size: 0.72rem;
-            font-weight: 600;
-            color: var(--text);
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        .card-body {
-            padding: 16px;
-        }
-
-        .card-name {
-            font-weight: 600;
-            font-size: 0.95rem;
-            color: var(--text);
-            margin-bottom: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .card-prompt {
-            font-size: 0.82rem;
-            color: var(--text-muted);
-            line-height: 1.5;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            margin-bottom: 12px;
-        }
-
-        .card-footer {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-top: 1px solid var(--border);
-            padding-top: 12px;
-        }
-
-        .card-date {
-            font-size: 0.75rem;
-            color: var(--text-subtle);
-            font-variant-numeric: tabular-nums;
-        }
-
-        /* ── Fav button on image ─── */
-        .btn-fav {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            border: none;
-            background: rgba(0,0,0,0.65);
-            backdrop-filter: blur(6px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 16px;
-            line-height: 1;
-            transition: transform 0.2s, background 0.2s;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .btn-fav { transition: background 0.2s; }
-        }
-
-        .btn-fav:hover {
-            background: rgba(239,68,68,0.5);
-            transform: scale(1.15);
-        }
-
-        .btn-fav:focus-visible {
-            outline: 2px solid var(--accent);
-            outline-offset: 2px;
-        }
-
-        .btn-fav.active {
-            background: rgba(239,68,68,0.3);
-        }
-
-        .btn-fav .heart {
-            transition: transform 0.2s;
-            display: block;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .btn-fav .heart { transition: none; }
-        }
-
-        .btn-fav.active .heart {
-            transform: scale(1.2);
-        }
-
-        /* ── Fav view toggle in header ─── */
-        .view-tabs {
-            display: flex;
-            gap: 6px;
-        }
-
-        .view-tab {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--text-muted);
-            font-size: 0.82rem;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .view-tab:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .view-tab.active {
-            background: rgba(239,68,68,0.15);
-            border-color: rgba(239,68,68,0.5);
-            color: #fca5a5;
-        }
-
-        .view-tab:focus-visible {
-            outline: 2px solid var(--accent);
-            outline-offset: 2px;
-        }
-
-        .fav-count {
-            background: rgba(239,68,68,0.25);
-            color: #fca5a5;
-            border-radius: 10px;
-            padding: 1px 7px;
-            font-size: 0.72rem;
-            font-variant-numeric: tabular-nums;
-        }
-
-        /* ───── Empty ───── */
-        .empty-state {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 72px 24px;
-            color: var(--text-subtle);
-        }
-
-        .empty-icon {
-            font-size: 3rem;
-            margin-bottom: 16px;
-            opacity: 0.4;
-        }
-
-        .empty-state p {
-            font-size: 1rem;
-            color: var(--text-muted);
-        }
-
-        .empty-state span {
-            display: block;
-            font-size: 0.85rem;
-            color: var(--text-subtle);
-            margin-top: 4px;
-        }
-
-        /* ───── Confirm Dialog ───── */
-        .dialog-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-            z-index: 200;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .dialog-backdrop.open {
-            display: flex;
-        }
-
-        .dialog {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 28px;
-            max-width: 360px;
-            width: 100%;
-        }
-
-        .dialog h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .dialog p {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-bottom: 24px;
-        }
-
-        .dialog-btns {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        /* ───── Responsive ───── */
-        @media (max-width: 900px) {
-            .main {
-                grid-template-columns: 1fr;
-            }
-            .upload-panel {
-                position: static;
-            }
-        }
-
-        @media (max-width: 600px) {
-            .hero { padding: 48px 20px 40px; }
-            .main { padding: 32px 16px 60px; }
+            width:26px; height:26px; border-radius:50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            display:flex; align-items:center; justify-content:center;
+            font-size:11px; font-weight:700; color:#fff; flex-shrink:0;
+            transition: background 0.3s;
+        }
+        .btn-logout { padding:4px 11px; background:transparent; border:1px solid var(--border); border-radius:20px; color:var(--text-subtle); font-size:0.73rem; font-family:inherit; cursor:pointer; transition:color .2s,border-color .2s; }
+        .btn-logout:hover { color:var(--accent); border-color:var(--accent); }
+        .btn-logout:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+        /* ── App shell ────────────────────────────────────────────── */
+        .shell { display:flex; flex:1; overflow:hidden; }
+
+        /* ── Sidebar ──────────────────────────────────────────────── */
+        .sidebar {
+            width: var(--sidebar-w); flex-shrink:0;
+            background: var(--surface); border-right:1px solid var(--border);
+            padding: 20px 12px; display:flex; flex-direction:column; gap:4px;
+            height: calc(100vh - 56px); position:sticky; top:56px;
+            overflow-y: auto;
+        }
+
+        .sidebar-label { font-size:0.68rem; font-weight:700; color:var(--text-subtle); text-transform:uppercase; letter-spacing:.8px; padding:0 8px; margin:12px 0 4px; }
+        .sidebar-label:first-child { margin-top:0; }
+
+        .nav-item {
+            display:flex; align-items:center; gap:10px;
+            padding: 9px 12px; border-radius:8px; border:none;
+            background:transparent; color:var(--text-muted);
+            font-family:inherit; font-size:0.88rem; font-weight:500;
+            cursor:pointer; text-align:left; width:100%;
+            transition: background .15s, color .15s;
+        }
+
+        .nav-item:hover { background:var(--surface-2); color:var(--text); }
+        .nav-item.active { background:var(--accent-soft); color:var(--accent); font-weight:600; }
+        .nav-item:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+        .nav-icon { font-size:16px; flex-shrink:0; width:20px; text-align:center; }
+        .nav-badge-sm { margin-left:auto; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:1px 7px; font-size:0.7rem; font-variant-numeric:tabular-nums; color:var(--text-subtle); }
+        .nav-item.active .nav-badge-sm { background:var(--accent-soft); border-color:var(--accent-glow); color:var(--accent); }
+
+        /* ── Main content ─────────────────────────────────────────── */
+        .main-content { flex:1; overflow-y:auto; height:calc(100vh - 56px); }
+
+        /* ── Module panels ────────────────────────────────────────── */
+        .module { display:none; padding:32px; max-width:1300px; }
+        .module.active { display:block; }
+
+        /* ── Section header ───────────────────────────────────────── */
+        .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; flex-wrap:wrap; gap:12px; }
+        .section-title { font-size:1.4rem; font-weight:800; letter-spacing:-.03em; }
+        .section-title span { background:linear-gradient(135deg, var(--accent), var(--accent-hover)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; transition:background .3s; }
+
+        /* ── TATUAJES module ──────────────────────────────────────── */
+        .tatu-layout { display:grid; grid-template-columns:360px 1fr; gap:28px; align-items:start; }
+
+        .upload-panel { position:sticky; top:32px; }
+
+        .panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:24px; }
+
+        .panel-title { font-size:0.92rem; font-weight:700; color:var(--text); margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+        .panel-title::before { content:''; display:block; width:3px; height:16px; background:var(--accent); border-radius:2px; transition:background .3s; }
+
+        .drop-zone { border:2px dashed var(--border); border-radius:var(--radius); padding:28px 16px; text-align:center; cursor:pointer; position:relative; margin-bottom:16px; transition:border-color .2s, background .2s; }
+        .drop-zone:hover, .drop-zone.drag-over { border-color:var(--accent); background:var(--accent-soft); }
+        .drop-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+        .drop-icon { font-size:2rem; margin-bottom:8px; }
+        .drop-text { font-size:0.88rem; color:var(--text-muted); margin-bottom:3px; }
+        .drop-hint { font-size:0.76rem; color:var(--text-subtle); }
+
+        .preview-wrap { position:relative; margin-bottom:16px; border-radius:var(--radius); overflow:hidden; aspect-ratio:4/3; display:none; }
+        .preview-wrap img { width:100%; height:100%; object-fit:cover; }
+        .preview-clear { position:absolute; top:7px; right:7px; background:rgba(0,0,0,.7); border:1px solid var(--border); border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text); font-size:12px; border:none; transition:background .2s; }
+        .preview-clear:hover { background:rgba(239,68,68,.55); }
+        .preview-clear:focus-visible { outline:2px solid var(--accent); }
+
+        .form-group { margin-bottom:15px; }
+        label { display:block; font-size:0.78rem; font-weight:600; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.4px; }
+
+        input[type="text"], textarea, select {
+            width:100%; padding:10px 13px;
+            background:var(--bg); border:1px solid var(--border); border-radius:8px;
+            color:var(--text); font-family:inherit; font-size:0.88rem;
+            transition:border-color .2s, box-shadow .2s;
+        }
+        input[type="text"]::placeholder, textarea::placeholder { color:var(--text-subtle); }
+        input[type="text"]:focus, textarea:focus, select:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+        textarea { resize:vertical; min-height:90px; }
+        select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2371717a' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:30px; color:var(--text); }
+
+        .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:9px 18px; border-radius:8px; font-family:inherit; font-size:0.88rem; font-weight:600; cursor:pointer; border:none; transition:transform .15s, box-shadow .15s, background .15s; }
+        .btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+        @media (prefers-reduced-motion:reduce) { .btn { transition:background .15s; } }
+
+        .btn-primary { width:100%; padding:11px; background:linear-gradient(135deg, var(--accent), var(--accent-hover)); color:#fff; box-shadow:0 4px 16px var(--accent-glow); transition:background .3s, transform .15s, box-shadow .15s; }
+        .btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 24px var(--accent-glow); }
+        .btn-primary:active:not(:disabled) { transform:translateY(0); }
+        .btn-primary:disabled { opacity:.45; cursor:not-allowed; }
+
+        .btn-ghost { background:transparent; border:1px solid var(--border); color:var(--text-muted); }
+        .btn-ghost:hover { background:var(--surface-2); color:var(--text); }
+
+        .btn-danger { background:transparent; border:1px solid transparent; color:var(--red); font-size:0.8rem; padding:5px 10px; }
+        .btn-danger:hover { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.3); }
+
+        .spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .6s linear infinite; display:none; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        /* Gallery controls */
+        .gallery-controls { margin-bottom:20px; display:flex; flex-direction:column; gap:12px; }
+        .view-tabs { display:flex; gap:6px; }
+        .view-tab { display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.8rem; font-weight:600; font-family:inherit; cursor:pointer; transition:all .2s; white-space:nowrap; }
+        .view-tab:hover { border-color:var(--accent); color:var(--accent); }
+        .view-tab.active { background:var(--accent-soft); border-color:var(--accent-glow); color:var(--accent); }
+        .view-tab:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+        .fav-count { background:rgba(239,68,68,.2); color:#fca5a5; border-radius:10px; padding:1px 7px; font-size:.7rem; font-variant-numeric:tabular-nums; }
+
+        .filter-row { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+        .filter-row::-webkit-scrollbar { height:3px; }
+        .filter-row::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+        .filter-btn { padding:5px 13px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.78rem; font-weight:500; cursor:pointer; transition:all .2s; font-family:inherit; white-space:nowrap; flex-shrink:0; }
+        .filter-btn:hover { border-color:var(--accent); color:var(--accent); }
+        .filter-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+        .filter-btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+        .filter-sep { width:1px; height:16px; background:var(--border); flex-shrink:0; align-self:center; margin:0 2px; }
+        .filter-group-label { display:flex; align-items:center; flex-shrink:0; font-size:.68rem; font-weight:700; color:var(--text-subtle); text-transform:uppercase; letter-spacing:.5px; padding:0 3px; white-space:nowrap; }
+
+        /* Gallery grid */
+        .gallery-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr)); gap:18px; }
+
+        .design-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; transition:transform .2s, border-color .2s, box-shadow .2s; }
+        @media (prefers-reduced-motion:reduce) { .design-card { transition:border-color .2s; } }
+        .design-card:hover { transform:translateY(-4px); border-color:var(--accent-glow); box-shadow:0 12px 36px rgba(0,0,0,.35); }
+
+        .card-img-wrap { position:relative; aspect-ratio:1; overflow:hidden; background:var(--surface-2); }
+        .card-img-wrap img { width:100%; height:100%; object-fit:cover; transition:transform .3s; }
+        @media (prefers-reduced-motion:reduce) { .card-img-wrap img { transition:none; } }
+        .design-card:hover .card-img-wrap img { transform:scale(1.04); }
+        .card-style-tag { position:absolute; top:8px; left:8px; background:rgba(0,0,0,.72); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:2px 9px; font-size:.68rem; font-weight:600; color:var(--text); text-transform:uppercase; letter-spacing:.3px; }
+        .btn-fav { position:absolute; top:8px; right:8px; width:32px; height:32px; border-radius:50%; border:none; background:rgba(0,0,0,.65); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:15px; transition:transform .2s, background .2s; }
+        @media (prefers-reduced-motion:reduce) { .btn-fav { transition:background .2s; } }
+        .btn-fav:hover { background:rgba(239,68,68,.5); transform:scale(1.15); }
+        .btn-fav.active { background:rgba(239,68,68,.3); }
+        .btn-fav .heart { display:block; transition:transform .15s; }
+        .btn-fav.active .heart { transform:scale(1.2); }
+        .btn-fav:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+        .card-body { padding:14px; }
+        .card-name { font-weight:600; font-size:.9rem; color:var(--text); margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .card-prompt { font-size:.8rem; color:var(--text-muted); line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-bottom:10px; }
+        .card-footer { display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--border); padding-top:10px; }
+        .card-date { font-size:.72rem; color:var(--text-subtle); font-variant-numeric:tabular-nums; }
+
+        .empty-state { grid-column:1/-1; text-align:center; padding:60px 24px; }
+        .empty-icon { font-size:2.5rem; margin-bottom:12px; opacity:.4; }
+        .empty-state p { font-size:.95rem; color:var(--text-muted); }
+        .empty-state span { display:block; font-size:.82rem; color:var(--text-subtle); margin-top:4px; }
+
+        /* ── PROMPTS module ───────────────────────────────────────── */
+        .prompts-layout { display:grid; grid-template-columns:340px 1fr; gap:28px; align-items:start; }
+        .prompt-cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:16px; }
+        .prompt-card {
+            background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+            padding:18px; cursor:pointer; transition:border-color .2s, transform .2s, box-shadow .2s;
+            position:relative;
+        }
+        .prompt-card:hover { border-color:var(--accent-glow); transform:translateY(-3px); box-shadow:0 10px 30px rgba(0,0,0,.3); }
+        .prompt-card-tag { display:inline-block; padding:2px 10px; border-radius:20px; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.4px; margin-bottom:10px; background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent-glow); transition:background .3s, color .3s; }
+        .prompt-card-title { font-size:.92rem; font-weight:700; color:var(--text); margin-bottom:7px; }
+        .prompt-card-body { font-size:.82rem; color:var(--text-muted); line-height:1.55; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+        .prompt-card-footer { display:flex; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
+        .btn-copy { flex:1; padding:7px; background:var(--surface-2); border:1px solid var(--border); border-radius:7px; color:var(--text-muted); font-family:inherit; font-size:.78rem; font-weight:600; cursor:pointer; transition:background .2s, color .2s, border-color .2s; }
+        .btn-copy:hover { background:var(--accent-soft); color:var(--accent); border-color:var(--accent-glow); }
+        .btn-copy:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+        .btn-del-prompt { padding:7px 10px; background:transparent; border:1px solid transparent; border-radius:7px; color:var(--text-subtle); font-family:inherit; font-size:.78rem; cursor:pointer; transition:background .2s, color .2s; }
+        .btn-del-prompt:hover { background:rgba(239,68,68,.1); color:var(--red); }
+        .prompt-category-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:20px; }
+        .cat-btn { padding:5px 13px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:.78rem; font-weight:500; cursor:pointer; font-family:inherit; transition:all .2s; white-space:nowrap; }
+        .cat-btn:hover { border-color:var(--accent); color:var(--accent); }
+        .cat-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+        .cat-btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+        /* ── TEMAS module ─────────────────────────────────────────── */
+        .themes-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:16px; max-width:900px; }
+        .theme-card {
+            border:2px solid var(--border); border-radius:var(--radius-lg);
+            padding:20px; cursor:pointer; transition:border-color .2s, transform .2s, box-shadow .2s;
+            background:var(--surface); position:relative; overflow:hidden;
+        }
+        .theme-card:hover { transform:translateY(-3px); box-shadow:0 10px 28px rgba(0,0,0,.3); }
+        .theme-card.selected { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+        .theme-card:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+        .theme-preview { width:100%; height:72px; border-radius:8px; margin-bottom:14px; display:flex; align-items:center; justify-content:center; gap:8px; }
+        .theme-dot { width:20px; height:20px; border-radius:50%; }
+        .theme-dot-bg { background:#09090b; border:1px solid #3f3f46; }
+        .theme-name { font-weight:700; font-size:.92rem; margin-bottom:3px; }
+        .theme-desc { font-size:.78rem; color:var(--text-muted); }
+        .theme-check { position:absolute; top:12px; right:12px; width:22px; height:22px; border-radius:50%; background:var(--accent); display:none; align-items:center; justify-content:center; font-size:12px; color:#fff; transition:background .3s; }
+        .theme-card.selected .theme-check { display:flex; }
+
+        /* ── Dialogs ──────────────────────────────────────────────── */
+        .dialog-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(4px); z-index:200; display:none; align-items:center; justify-content:center; padding:20px; }
+        .dialog-backdrop.open { display:flex; }
+        .dialog { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:26px; max-width:360px; width:100%; }
+        .dialog h2 { font-size:1.05rem; font-weight:700; margin-bottom:7px; }
+        .dialog p { color:var(--text-muted); font-size:.88rem; margin-bottom:22px; }
+        .dialog-btns { display:flex; gap:8px; justify-content:flex-end; }
+
+        /* ── Toast ────────────────────────────────────────────────── */
+        .toast-wrap { position:fixed; bottom:22px; right:22px; z-index:100; display:flex; flex-direction:column; gap:8px; }
+        .toast { padding:11px 16px; border-radius:9px; font-size:.87rem; font-weight:500; border:1px solid; opacity:0; transform:translateY(8px); transition:opacity .22s, transform .22s; pointer-events:none; }
+        .toast.show { opacity:1; transform:translateY(0); }
+        @media (prefers-reduced-motion:reduce) { .toast { transition:opacity .22s; transform:none; } }
+        .toast-success { background:rgba(34,197,94,.1); border-color:rgba(34,197,94,.3); color:#86efac; }
+        .toast-error   { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.3); color:#fca5a5; }
+
+        /* ── Responsive ───────────────────────────────────────────── */
+        @media (max-width:1024px) {
+            .tatu-layout, .prompts-layout { grid-template-columns:1fr; }
+            .upload-panel { position:static; }
+        }
+        @media (max-width:768px) {
+            :root { --sidebar-w:60px; }
+            .nav-item span.nav-label { display:none; }
+            .nav-item { justify-content:center; padding:10px; }
+            .nav-badge-sm { display:none; }
+            .sidebar-label { display:none; }
+            .module { padding:20px 16px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Navbar -->
-    <nav>
-        <div class="nav-inner">
-            <a href="#" class="logo" aria-label="InkVault inicio">
-                <div class="logo-icon" aria-hidden="true">🖊</div>
-                InkVault
-            </a>
-            <div class="nav-right">
-                <div class="nav-badge" id="navCount" aria-live="polite">0 diseños</div>
-                <div class="nav-user" id="navUser" aria-label="Usuario actual">
-                    <div class="nav-avatar" id="navAvatar" aria-hidden="true">?</div>
-                    <span id="navName">...</span>
-                </div>
-                <button class="btn-logout" id="logoutBtn" type="button" aria-label="Cerrar sesión">Salir</button>
+    <!-- Topbar -->
+    <header class="topbar">
+        <a href="#" class="logo" aria-label="InkVault inicio">
+            <div class="logo-box" aria-hidden="true">🖊</div>
+            InkVault
+        </a>
+        <div class="topbar-right">
+            <div class="nav-pill" id="navCount" aria-live="polite">0 diseños</div>
+            <div class="nav-user" id="navUser">
+                <div class="nav-avatar" id="navAvatar" aria-hidden="true">?</div>
+                <span id="navName">...</span>
             </div>
+            <button class="btn-logout" id="logoutBtn" type="button" aria-label="Cerrar sesión">Salir</button>
         </div>
-    </nav>
-
-    <!-- Hero -->
-    <header class="hero">
-        <div class="hero-label" aria-hidden="true">✦ Estudio Digital</div>
-        <h1>Tu biblioteca de <span>diseños</span></h1>
-        <p>Sube, organiza y guarda tus diseños de tatuajes junto con sus prompts de plantilla.</p>
     </header>
 
-    <!-- Main Grid -->
-    <main class="main">
+    <div class="shell">
 
-        <!-- Upload Panel -->
-        <section class="upload-panel" aria-label="Subir diseño">
-            <div class="panel">
-                <h2 class="panel-title">Subir Diseño</h2>
+        <!-- Sidebar -->
+        <nav class="sidebar" aria-label="Módulos">
+            <span class="sidebar-label">Módulos</span>
 
-                <form id="designForm" novalidate>
-                    <!-- Drop Zone -->
-                    <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Zona de carga. Haz clic o arrastra una imagen">
-                        <input type="file" id="designImage" name="image" accept="image/*" aria-label="Seleccionar imagen del diseño" required>
-                        <div class="drop-icon" aria-hidden="true">🖼</div>
-                        <p class="drop-text">Arrastra tu imagen aquí</p>
-                        <p class="drop-hint">PNG, JPG, WebP — máx. 10 MB</p>
-                    </div>
+            <button class="nav-item active" data-module="tatu" aria-current="page">
+                <span class="nav-icon" aria-hidden="true">🖼</span>
+                <span class="nav-label">Tatuajes</span>
+                <span class="nav-badge-sm" id="sidetatu">0</span>
+            </button>
 
-                    <!-- Preview -->
-                    <div class="preview-wrap" id="previewWrap" aria-hidden="true">
-                        <img id="filePreview" src="" alt="Vista previa del diseño seleccionado">
-                        <button type="button" class="preview-clear" id="clearPreview" aria-label="Quitar imagen">✕</button>
-                    </div>
+            <button class="nav-item" data-module="prompts" aria-current="false">
+                <span class="nav-icon" aria-hidden="true">✍</span>
+                <span class="nav-label">Prompts</span>
+                <span class="nav-badge-sm" id="sideprompts">0</span>
+            </button>
 
-                    <!-- Name -->
-                    <div class="form-group">
-                        <label for="designName">Nombre del diseño</label>
-                        <input type="text" id="designName" name="name" placeholder="Ej: Phoenix Wings…" autocomplete="off" required>
-                    </div>
+            <button class="nav-item" data-module="temas">
+                <span class="nav-icon" aria-hidden="true">🎨</span>
+                <span class="nav-label">Temas</span>
+            </button>
 
-                    <!-- Style -->
-                    <div class="form-group">
-                        <label for="designStyle">Estilo</label>
-                        <select id="designStyle" name="style">
-                            <option value="">— Sin especificar —</option>
-                            <optgroup label="Clásicos">
-                                <option value="Traditional">Traditional</option>
-                                <option value="Neo-trad">Neo-traditional</option>
-                                <option value="Old School">Old School</option>
-                            </optgroup>
-                            <optgroup label="Oscuros">
-                                <option value="Blackwork">Blackwork</option>
-                                <option value="Dark Art">Dark Art</option>
-                                <option value="Trash Polka">Trash Polka</option>
-                                <option value="Black & Grey">Black &amp; Grey</option>
-                            </optgroup>
-                            <optgroup label="Realistas">
-                                <option value="Realismo">Realismo</option>
-                                <option value="Hiper-realismo">Hiper-realismo</option>
-                                <option value="Retrato">Retrato</option>
-                            </optgroup>
-                            <optgroup label="Artísticos">
-                                <option value="Acuarela">Acuarela</option>
-                                <option value="Sketch">Sketch</option>
-                                <option value="Ilustración">Ilustración</option>
-                                <option value="Surrealism">Surrealismo</option>
-                            </optgroup>
-                            <optgroup label="Geométricos">
-                                <option value="Geométrico">Geométrico</option>
-                                <option value="Dotwork">Dotwork</option>
-                                <option value="Mandala">Mandala</option>
-                                <option value="Sacred Geo">Sacred Geometry</option>
-                            </optgroup>
-                            <optgroup label="Minimalistas">
-                                <option value="Minimalista">Minimalista</option>
-                                <option value="Linework">Linework</option>
-                                <option value="Micro">Micro</option>
-                                <option value="Fineline">Fineline</option>
-                            </optgroup>
-                            <optgroup label="Culturales">
-                                <option value="Japonés">Japonés</option>
-                                <option value="Tribal">Tribal</option>
-                                <option value="Maorí">Maorí</option>
-                                <option value="Chicano">Chicano</option>
-                                <option value="Celta">Celta</option>
-                                <option value="Nórdico">Nórdico</option>
-                            </optgroup>
-                            <optgroup label="Pop & Otros">
-                                <option value="Lettering">Lettering</option>
-                                <option value="Biomecánico">Biomecánico</option>
-                                <option value="Cyber Sigilism">Cyber Sigilism</option>
-                                <option value="Ignorant">Ignorant Style</option>
-                                <option value="Pop Art">Pop Art</option>
-                                <option value="Sticker">Sticker Tattoo</option>
-                            </optgroup>
-                        </select>
-                    </div>
+            <span class="sidebar-label">Colección</span>
+            <button class="nav-item" data-module="tatu" data-favs="true">
+                <span class="nav-icon" aria-hidden="true">♥</span>
+                <span class="nav-label">Favoritos</span>
+                <span class="nav-badge-sm" id="sidefavs">0</span>
+            </button>
+        </nav>
 
-                    <!-- Prompt -->
-                    <div class="form-group">
-                        <label for="designPrompt">Prompt / Descripción</label>
-                        <textarea id="designPrompt" name="prompt" placeholder="Describe el diseño, elementos, colores, instrucciones para el artista…" autocomplete="off" required></textarea>
-                    </div>
+        <!-- Main -->
+        <main class="main-content">
 
-                    <!-- Submit -->
-                    <button type="submit" class="btn btn-primary" id="submitBtn">
-                        <span class="spinner" id="spinner" aria-hidden="true"></span>
-                        <span id="submitLabel">Guardar Diseño</span>
-                    </button>
-                </form>
-            </div>
-        </section>
+            <!-- ═══ MODULE: TATUAJES ═══ -->
+            <div class="module active" id="mod-tatu">
+                <div class="section-header">
+                    <h1 class="section-title">Mis <span>Tatuajes</span></h1>
+                </div>
 
-        <!-- Gallery Panel -->
-        <section aria-label="Galería de diseños">
-            <div class="gallery-header">
-                <h2 class="gallery-title">Galería</h2>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <div class="view-tabs" role="group" aria-label="Vista de galería">
-                        <button class="view-tab active" id="viewAll" aria-pressed="true">Todos <span class="count-badge" id="countBadge" aria-live="polite">0</span></button>
-                        <button class="view-tab" id="viewFavs" aria-pressed="false">♥ Favoritos <span class="fav-count" id="favCountBadge" aria-live="polite">0</span></button>
-                    </div>
+                <div class="tatu-layout">
+
+                    <!-- Upload panel -->
+                    <aside class="upload-panel" aria-label="Subir diseño">
+                        <div class="panel">
+                            <h2 class="panel-title">Subir Diseño</h2>
+                            <form id="designForm" novalidate>
+                                <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Zona de carga">
+                                    <input type="file" id="designImage" name="image" accept="image/*" aria-label="Seleccionar imagen" required>
+                                    <div class="drop-icon" aria-hidden="true">🖼</div>
+                                    <p class="drop-text">Arrastra tu imagen aquí</p>
+                                    <p class="drop-hint">PNG, JPG, WebP — máx. 10 MB</p>
+                                </div>
+                                <div class="preview-wrap" id="previewWrap" aria-hidden="true">
+                                    <img id="filePreview" src="" alt="Vista previa">
+                                    <button type="button" class="preview-clear" id="clearPreview" aria-label="Quitar imagen">✕</button>
+                                </div>
+                                <div class="form-group">
+                                    <label for="designName">Nombre</label>
+                                    <input type="text" id="designName" name="name" placeholder="Ej: Phoenix Wings…" autocomplete="off" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="designStyle">Estilo</label>
+                                    <select id="designStyle" name="style">
+                                        <option value="">— Sin especificar —</option>
+                                        <optgroup label="Clásicos"><option>Traditional</option><option>Neo-trad</option><option>Old School</option></optgroup>
+                                        <optgroup label="Oscuros"><option>Blackwork</option><option>Dark Art</option><option>Trash Polka</option><option value="Black & Grey">Black &amp; Grey</option></optgroup>
+                                        <optgroup label="Realistas"><option>Realismo</option><option>Hiper-realismo</option><option>Retrato</option></optgroup>
+                                        <optgroup label="Artísticos"><option>Acuarela</option><option>Sketch</option><option>Ilustración</option><option>Surrealism</option></optgroup>
+                                        <optgroup label="Geométricos"><option>Geométrico</option><option>Dotwork</option><option>Mandala</option><option value="Sacred Geo">Sacred Geometry</option></optgroup>
+                                        <optgroup label="Finos"><option>Minimalista</option><option>Linework</option><option>Micro</option><option>Fineline</option></optgroup>
+                                        <optgroup label="Culturales"><option>Japonés</option><option>Tribal</option><option>Maorí</option><option>Chicano</option><option>Celta</option><option>Nórdico</option></optgroup>
+                                        <optgroup label="Pop & Otros"><option>Lettering</option><option>Biomecánico</option><option value="Cyber Sigilism">Cyber Sigilism</option><option>Ignorant</option><option>Pop Art</option><option>Sticker</option></optgroup>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="designPrompt">Prompt / Descripción</label>
+                                    <textarea id="designPrompt" name="prompt" placeholder="Describe el diseño…" autocomplete="off" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <span class="spinner" id="spinner" aria-hidden="true"></span>
+                                    <span id="submitLabel">Guardar Diseño</span>
+                                </button>
+                            </form>
+                        </div>
+                    </aside>
+
+                    <!-- Gallery -->
+                    <section aria-label="Galería">
+                        <div class="gallery-controls">
+                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                                <div class="view-tabs" role="group" aria-label="Vista">
+                                    <button class="view-tab active" id="viewAll" aria-pressed="true">
+                                        Todos <span id="countBadge" style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:1px 7px;font-size:.7rem;font-variant-numeric:tabular-nums;color:var(--text-subtle);" aria-live="polite">0</span>
+                                    </button>
+                                    <button class="view-tab" id="viewFavs" aria-pressed="false">
+                                        ♥ Favoritos <span class="fav-count" id="favCountBadge" aria-live="polite">0</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="filter-row" role="group" aria-label="Filtrar por estilo">
+                                <button class="filter-btn active" data-filter="all">Todos</button>
+                                <div class="filter-sep" aria-hidden="true"></div>
+                                <span class="filter-group-label" aria-hidden="true">Clásicos</span>
+                                <button class="filter-btn" data-filter="Traditional">Traditional</button>
+                                <button class="filter-btn" data-filter="Neo-trad">Neo-trad</button>
+                                <button class="filter-btn" data-filter="Old School">Old School</button>
+                                <div class="filter-sep" aria-hidden="true"></div>
+                                <span class="filter-group-label" aria-hidden="true">Oscuros</span>
+                                <button class="filter-btn" data-filter="Blackwork">Blackwork</button>
+                                <button class="filter-btn" data-filter="Dark Art">Dark Art</button>
+                                <button class="filter-btn" data-filter="Trash Polka">Trash Polka</button>
+                                <button class="filter-btn" data-filter="Black & Grey">Black &amp; Grey</button>
+                                <div class="filter-sep" aria-hidden="true"></div>
+                                <span class="filter-group-label" aria-hidden="true">Realistas</span>
+                                <button class="filter-btn" data-filter="Realismo">Realismo</button>
+                                <button class="filter-btn" data-filter="Hiper-realismo">Hiper-real</button>
+                                <button class="filter-btn" data-filter="Retrato">Retrato</button>
+                                <div class="filter-sep" aria-hidden="true"></div>
+                                <span class="filter-group-label" aria-hidden="true">Artísticos</span>
+                                <button class="filter-btn" data-filter="Acuarela">Acuarela</button>
+                                <button class="filter-btn" data-filter="Sketch">Sketch</button>
+                                <button class="filter-btn" data-filter="Ilustración">Ilustración</button>
+                                <button class="filter-btn" data-filter="Surrealism">Surrealismo</button>
+                                <div class="filter-sep" aria-hidden="true"></div>
+                                <span class="filter-group-label" aria-hidden="true">Geométricos</span>
+                                <button class="filter-btn" data-filter="Geométrico">Geométrico</button>
+                                <button class="filter-btn" data-filter="Dotwork">Dotwork</button>
+                                <button class="filter-btn" data-filter="Mandala">Mandala</button>
+                                <button class="filter-btn" data-filter="Sacred Geo">Sacred Geo</button>
+                                <div class="filter-sep" aria-hidden="true"></div>
+                                <span class="filter-group-label" aria-hidden="true">Finos</span>
+                                <button class="filter-btn" data-filter="Minimalista">Minimalista</button>
+                                <button class="filter-btn" data-filter="Linework">Linework</button>
+                                <button class="filter-btn" data-filter="Micro">Micro</button>
+                                <button class="filter-btn" data-filter="Fineline">Fineline</button>
+                                <div class="filter-sep" aria-hidden="true"></div>
+                                <span class="filter-group-label" aria-hidden="true">Culturales</span>
+                                <button class="filter-btn" data-filter="Japonés">Japonés</button>
+                                <button class="filter-btn" data-filter="Tribal">Tribal</button>
+                                <button class="filter-btn" data-filter="Maorí">Maorí</button>
+                                <button class="filter-btn" data-filter="Chicano">Chicano</button>
+                                <button class="filter-btn" data-filter="Celta">Celta</button>
+                                <button class="filter-btn" data-filter="Nórdico">Nórdico</button>
+                                <div class="filter-sep" aria-hidden="true"></div>
+                                <span class="filter-group-label" aria-hidden="true">Pop &amp; Otros</span>
+                                <button class="filter-btn" data-filter="Lettering">Lettering</button>
+                                <button class="filter-btn" data-filter="Biomecánico">Biomecánico</button>
+                                <button class="filter-btn" data-filter="Cyber Sigilism">Cyber Sigil</button>
+                                <button class="filter-btn" data-filter="Ignorant">Ignorant</button>
+                                <button class="filter-btn" data-filter="Pop Art">Pop Art</button>
+                                <button class="filter-btn" data-filter="Sticker">Sticker</button>
+                            </div>
+                        </div>
+                        <div class="gallery-grid" id="gallery" role="list" aria-label="Diseños guardados"></div>
+                    </section>
                 </div>
             </div>
 
-            <!-- Filters -->
-            <div class="filter-row" role="group" aria-label="Filtrar por estilo">
-                <button class="filter-btn active" data-filter="all">Todos</button>
-                <div class="filter-sep" aria-hidden="true"></div>
-                <span class="filter-group-label" aria-hidden="true">Clásicos</span>
-                <button class="filter-btn" data-filter="Traditional">Traditional</button>
-                <button class="filter-btn" data-filter="Neo-trad">Neo-trad</button>
-                <button class="filter-btn" data-filter="Old School">Old School</button>
-                <div class="filter-sep" aria-hidden="true"></div>
-                <span class="filter-group-label" aria-hidden="true">Oscuros</span>
-                <button class="filter-btn" data-filter="Blackwork">Blackwork</button>
-                <button class="filter-btn" data-filter="Dark Art">Dark Art</button>
-                <button class="filter-btn" data-filter="Trash Polka">Trash Polka</button>
-                <button class="filter-btn" data-filter="Black & Grey">Black &amp; Grey</button>
-                <div class="filter-sep" aria-hidden="true"></div>
-                <span class="filter-group-label" aria-hidden="true">Realistas</span>
-                <button class="filter-btn" data-filter="Realismo">Realismo</button>
-                <button class="filter-btn" data-filter="Hiper-realismo">Hiper-real</button>
-                <button class="filter-btn" data-filter="Retrato">Retrato</button>
-                <div class="filter-sep" aria-hidden="true"></div>
-                <span class="filter-group-label" aria-hidden="true">Artísticos</span>
-                <button class="filter-btn" data-filter="Acuarela">Acuarela</button>
-                <button class="filter-btn" data-filter="Sketch">Sketch</button>
-                <button class="filter-btn" data-filter="Ilustración">Ilustración</button>
-                <button class="filter-btn" data-filter="Surrealism">Surrealismo</button>
-                <div class="filter-sep" aria-hidden="true"></div>
-                <span class="filter-group-label" aria-hidden="true">Geométricos</span>
-                <button class="filter-btn" data-filter="Geométrico">Geométrico</button>
-                <button class="filter-btn" data-filter="Dotwork">Dotwork</button>
-                <button class="filter-btn" data-filter="Mandala">Mandala</button>
-                <button class="filter-btn" data-filter="Sacred Geo">Sacred Geo</button>
-                <div class="filter-sep" aria-hidden="true"></div>
-                <span class="filter-group-label" aria-hidden="true">Finos</span>
-                <button class="filter-btn" data-filter="Minimalista">Minimalista</button>
-                <button class="filter-btn" data-filter="Linework">Linework</button>
-                <button class="filter-btn" data-filter="Micro">Micro</button>
-                <button class="filter-btn" data-filter="Fineline">Fineline</button>
-                <div class="filter-sep" aria-hidden="true"></div>
-                <span class="filter-group-label" aria-hidden="true">Culturales</span>
-                <button class="filter-btn" data-filter="Japonés">Japonés</button>
-                <button class="filter-btn" data-filter="Tribal">Tribal</button>
-                <button class="filter-btn" data-filter="Maorí">Maorí</button>
-                <button class="filter-btn" data-filter="Chicano">Chicano</button>
-                <button class="filter-btn" data-filter="Celta">Celta</button>
-                <button class="filter-btn" data-filter="Nórdico">Nórdico</button>
-                <div class="filter-sep" aria-hidden="true"></div>
-                <span class="filter-group-label" aria-hidden="true">Pop &amp; Otros</span>
-                <button class="filter-btn" data-filter="Lettering">Lettering</button>
-                <button class="filter-btn" data-filter="Biomecánico">Biomecánico</button>
-                <button class="filter-btn" data-filter="Cyber Sigilism">Cyber Sigil</button>
-                <button class="filter-btn" data-filter="Ignorant">Ignorant</button>
-                <button class="filter-btn" data-filter="Pop Art">Pop Art</button>
-                <button class="filter-btn" data-filter="Sticker">Sticker</button>
+            <!-- ═══ MODULE: PROMPTS ═══ -->
+            <div class="module" id="mod-prompts">
+                <div class="section-header">
+                    <h1 class="section-title">Mis <span>Prompts</span></h1>
+                </div>
+                <div class="prompts-layout">
+
+                    <!-- Prompt form -->
+                    <aside>
+                        <div class="panel">
+                            <h2 class="panel-title">Nuevo Prompt</h2>
+                            <form id="promptForm" novalidate>
+                                <div class="form-group">
+                                    <label for="promptTitle">Título</label>
+                                    <input type="text" id="promptTitle" placeholder="Ej: Lobo nórdico en linework…" autocomplete="off" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="promptCat">Categoría</label>
+                                    <select id="promptCat">
+                                        <option value="General">General</option>
+                                        <option value="Estilo">Estilo</option>
+                                        <option value="Composición">Composición</option>
+                                        <option value="Color">Color</option>
+                                        <option value="Ubicación">Ubicación corporal</option>
+                                        <option value="Elementos">Elementos</option>
+                                        <option value="Animal">Animal</option>
+                                        <option value="Floral">Floral</option>
+                                        <option value="Geométrico">Geométrico</option>
+                                        <option value="Letras">Letras</option>
+                                        <option value="Mitología">Mitología</option>
+                                        <option value="Oscuro">Oscuro / Dark</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="promptBody">Texto del prompt</label>
+                                    <textarea id="promptBody" placeholder="Escribe el prompt completo aquí…" style="min-height:130px;" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary" id="promptSubmit">
+                                    <span id="promptSubmitLabel">Guardar Prompt</span>
+                                </button>
+                            </form>
+                        </div>
+                    </aside>
+
+                    <!-- Prompt list -->
+                    <section aria-label="Prompts guardados">
+                        <div class="prompt-category-row" role="group" aria-label="Filtrar prompts">
+                            <button class="cat-btn active" data-cat="all">Todos</button>
+                            <button class="cat-btn" data-cat="General">General</button>
+                            <button class="cat-btn" data-cat="Estilo">Estilo</button>
+                            <button class="cat-btn" data-cat="Composición">Composición</button>
+                            <button class="cat-btn" data-cat="Color">Color</button>
+                            <button class="cat-btn" data-cat="Ubicación">Ubicación</button>
+                            <button class="cat-btn" data-cat="Elementos">Elementos</button>
+                            <button class="cat-btn" data-cat="Animal">Animal</button>
+                            <button class="cat-btn" data-cat="Floral">Floral</button>
+                            <button class="cat-btn" data-cat="Geométrico">Geométrico</button>
+                            <button class="cat-btn" data-cat="Letras">Letras</button>
+                            <button class="cat-btn" data-cat="Mitología">Mitología</button>
+                            <button class="cat-btn" data-cat="Oscuro">Oscuro</button>
+                        </div>
+                        <div class="prompt-cards" id="promptList" role="list" aria-label="Lista de prompts"></div>
+                    </section>
+                </div>
             </div>
 
-            <div class="gallery-grid" id="gallery" role="list" aria-label="Diseños guardados"></div>
-        </section>
-    </main>
+            <!-- ═══ MODULE: TEMAS ═══ -->
+            <div class="module" id="mod-temas">
+                <div class="section-header">
+                    <h1 class="section-title">Temas de <span>Color</span></h1>
+                </div>
+                <p style="color:var(--text-muted);margin-bottom:28px;font-size:.92rem;">Elige el color de acento para toda la aplicación.</p>
+
+                <div class="themes-grid" role="radiogroup" aria-label="Seleccionar tema">
+                    <!-- Cards se generan con JS -->
+                </div>
+            </div>
+
+        </main>
+    </div>
 
     <!-- Toasts -->
     <div class="toast-wrap" aria-live="polite" aria-atomic="true">
-        <div class="toast toast-success" id="toastSuccess" role="status">✓ Diseño guardado</div>
-        <div class="toast toast-error" id="toastError" role="alert">✗ Error al guardar</div>
+        <div class="toast toast-success" id="toastSuccess" role="status"></div>
+        <div class="toast toast-error"   id="toastError"   role="alert"></div>
     </div>
 
-    <!-- Delete Confirm Dialog -->
+    <!-- Delete dialog -->
     <div class="dialog-backdrop" id="confirmDialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
         <div class="dialog">
-            <h2 id="dialogTitle">¿Eliminar diseño?</h2>
-            <p>Esta acción no se puede deshacer. El diseño se eliminará permanentemente.</p>
+            <h2 id="dialogTitle">¿Eliminar?</h2>
+            <p id="dialogMsg">Esta acción no se puede deshacer.</p>
             <div class="dialog-btns">
                 <button class="btn btn-ghost" id="cancelDelete">Cancelar</button>
                 <button class="btn btn-danger" id="confirmDelete">Eliminar</button>
@@ -1120,301 +598,335 @@
     </div>
 
     <script>
-        // ── State ──────────────────────────────────────────────────────
-        let designs = [];
-        let currentFilter = 'all';
-        let pendingDeleteIndex = null;
-        let showFavsOnly = false;
+    // ════════════════════════════════════════════════════
+    // STATE
+    // ════════════════════════════════════════════════════
+    let designs = [];
+    let prompts  = [];
+    let currentFilter  = 'all';
+    let currentPromCat = 'all';
+    let showFavsOnly   = false;
+    let pendingDelete  = null; // { type: 'design'|'prompt', id }
 
-        // ── Load from localStorage ─────────────────────────────────────
-        try {
-            designs = JSON.parse(localStorage.getItem('inkVaultDesigns') || '[]');
-        } catch { designs = []; }
+    try { designs = JSON.parse(localStorage.getItem('inkVaultDesigns') || '[]'); } catch {}
+    try { prompts  = JSON.parse(localStorage.getItem('inkVaultPrompts')  || '[]'); } catch {}
 
-        function persist() {
-            try { localStorage.setItem('inkVaultDesigns', JSON.stringify(designs)); } catch {}
-        }
+    function persistDesigns() { try { localStorage.setItem('inkVaultDesigns', JSON.stringify(designs)); } catch {} }
+    function persistPrompts()  { try { localStorage.setItem('inkVaultPrompts',  JSON.stringify(prompts));  } catch {} }
 
-        // ── DOM refs ───────────────────────────────────────────────────
-        const form = document.getElementById('designForm');
-        const nameInput = document.getElementById('designName');
-        const styleInput = document.getElementById('designStyle');
-        const promptInput = document.getElementById('designPrompt');
-        const imageInput = document.getElementById('designImage');
-        const dropZone = document.getElementById('dropZone');
-        const previewWrap = document.getElementById('previewWrap');
-        const filePreview = document.getElementById('filePreview');
-        const clearBtn = document.getElementById('clearPreview');
-        const gallery = document.getElementById('gallery');
-        const submitBtn = document.getElementById('submitBtn');
-        const spinner = document.getElementById('spinner');
-        const submitLabel = document.getElementById('submitLabel');
-        const countBadge = document.getElementById('countBadge');
-        const favCountBadge = document.getElementById('favCountBadge');
-        const navCount = document.getElementById('navCount');
-        const viewAllBtn = document.getElementById('viewAll');
-        const viewFavsBtn = document.getElementById('viewFavs');
-        const toastSuccess = document.getElementById('toastSuccess');
-        const toastError = document.getElementById('toastError');
-        const confirmDialog = document.getElementById('confirmDialog');
-        const cancelDelete = document.getElementById('cancelDelete');
-        const confirmDelete = document.getElementById('confirmDelete');
+    // ════════════════════════════════════════════════════
+    // AUTH
+    // ════════════════════════════════════════════════════
+    let currentUser = null;
+    try { currentUser = JSON.parse(localStorage.getItem('inkVaultUser') || 'null'); } catch {}
+    if (!currentUser) { window.location.href = 'index.html'; }
+    else {
+        const ini = currentUser.name ? currentUser.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?';
+        document.getElementById('navAvatar').textContent = ini;
+        document.getElementById('navName').textContent   = currentUser.name || 'Invitado';
+    }
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        try { localStorage.removeItem('inkVaultUser'); } catch {}
+        window.location.href = 'index.html';
+    });
 
-        // ── File / Drop ────────────────────────────────────────────────
-        let currentImageData = null;
-
-        function setPreview(dataUrl) {
-            currentImageData = dataUrl;
-            filePreview.src = dataUrl;
-            previewWrap.style.display = 'block';
-            dropZone.style.display = 'none';
-            previewWrap.removeAttribute('aria-hidden');
-        }
-
-        function clearPreview() {
-            currentImageData = null;
-            filePreview.src = '';
-            previewWrap.style.display = 'none';
-            previewWrap.setAttribute('aria-hidden', 'true');
-            dropZone.style.display = '';
-            imageInput.value = '';
-        }
-
-        imageInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => setPreview(ev.target.result);
-            reader.readAsDataURL(file);
+    // ════════════════════════════════════════════════════
+    // SIDEBAR NAVIGATION
+    // ════════════════════════════════════════════════════
+    document.querySelectorAll('.nav-item[data-module]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mod = btn.dataset.module;
+            const favs = btn.dataset.favs === 'true';
+            switchModule(mod, favs);
         });
+    });
 
-        clearBtn.addEventListener('click', clearPreview);
+    function switchModule(modId, openFavs = false) {
+        document.querySelectorAll('.nav-item').forEach(b => { b.classList.remove('active'); b.removeAttribute('aria-current'); });
+        document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
 
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('drag-over');
-            const file = e.dataTransfer?.files[0];
-            if (!file || !file.type.startsWith('image/')) return;
-            const reader = new FileReader();
-            reader.onload = ev => setPreview(ev.target.result);
-            reader.readAsDataURL(file);
-        });
+        const targetBtn = openFavs
+            ? document.querySelector(`.nav-item[data-module="${modId}"][data-favs="true"]`)
+            : document.querySelector(`.nav-item[data-module="${modId}"]:not([data-favs])`);
+        if (targetBtn) { targetBtn.classList.add('active'); targetBtn.setAttribute('aria-current', 'page'); }
 
-        // Keyboard support for drop zone
-        dropZone.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                imageInput.click();
-            }
-        });
+        document.getElementById(`mod-${modId}`).classList.add('active');
 
-        // ── Form Submit ────────────────────────────────────────────────
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentImageData) { showToast('error', '✗ Selecciona una imagen'); return; }
-            if (!nameInput.value.trim()) { nameInput.focus(); return; }
-            if (!promptInput.value.trim()) { promptInput.focus(); return; }
-
-            setLoading(true);
-
-            // Simulate small async delay for UX
-            await new Promise(r => setTimeout(r, 300));
-
-            designs.unshift({
-                id: Date.now(),
-                name: nameInput.value.trim(),
-                style: styleInput.value,
-                prompt: promptInput.value.trim(),
-                image: currentImageData,
-                date: new Date().toISOString(),
-            });
-
-            persist();
-            setLoading(false);
-            form.reset();
-            clearPreview();
-            renderGallery();
-            showToast('success', '✓ Diseño guardado');
-        });
-
-        function setLoading(on) {
-            submitBtn.disabled = on;
-            spinner.style.display = on ? 'block' : 'none';
-            submitLabel.textContent = on ? 'Guardando…' : 'Guardar Diseño';
-        }
-
-        // ── Toast ──────────────────────────────────────────────────────
-        let toastTimer;
-        function showToast(type, msg) {
-            clearTimeout(toastTimer);
-            const el = type === 'success' ? toastSuccess : toastError;
-            const other = type === 'success' ? toastError : toastSuccess;
-            other.classList.remove('show');
-            el.textContent = msg;
-            el.classList.add('show');
-            toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
-        }
-
-        // ── Filters ────────────────────────────────────────────────────
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelector('.filter-btn.active').classList.remove('active');
-                btn.classList.add('active');
-                currentFilter = btn.dataset.filter;
-                renderGallery();
-            });
-        });
-
-        // ── View tabs (Todos / Favoritos) ──────────────────────────────
-        viewAllBtn.addEventListener('click', () => {
-            showFavsOnly = false;
-            viewAllBtn.classList.add('active');
-            viewAllBtn.setAttribute('aria-pressed', 'true');
-            viewFavsBtn.classList.remove('active');
-            viewFavsBtn.setAttribute('aria-pressed', 'false');
-            renderGallery();
-        });
-
-        viewFavsBtn.addEventListener('click', () => {
+        if (modId === 'tatu' && openFavs) {
             showFavsOnly = true;
-            viewFavsBtn.classList.add('active');
-            viewFavsBtn.setAttribute('aria-pressed', 'true');
-            viewAllBtn.classList.remove('active');
-            viewAllBtn.setAttribute('aria-pressed', 'false');
+            viewFavsBtn.classList.add('active'); viewFavsBtn.setAttribute('aria-pressed','true');
+            viewAllBtn.classList.remove('active'); viewAllBtn.setAttribute('aria-pressed','false');
             renderGallery();
-        });
-
-        // ── Toggle Favorite ────────────────────────────────────────────
-        function toggleFav(id) {
-            const idx = designs.findIndex(d => d.id === id);
-            if (idx === -1) return;
-            designs[idx].fav = !designs[idx].fav;
-            persist();
-            renderGallery();
-            showToast('success', designs[idx].fav ? '♥ Agregado a favoritos' : '♡ Quitado de favoritos');
         }
+    }
 
-        // ── Delete Dialog ──────────────────────────────────────────────
-        function askDelete(index) {
-            pendingDeleteIndex = index;
-            confirmDialog.classList.add('open');
-            confirmDelete.focus();
-        }
+    // ════════════════════════════════════════════════════
+    // TOAST
+    // ════════════════════════════════════════════════════
+    let toastTimer;
+    const toastSuccess = document.getElementById('toastSuccess');
+    const toastError   = document.getElementById('toastError');
+    function showToast(type, msg) {
+        clearTimeout(toastTimer);
+        const el = type === 'success' ? toastSuccess : toastError;
+        const ot = type === 'success' ? toastError : toastSuccess;
+        ot.classList.remove('show');
+        el.textContent = msg; el.classList.add('show');
+        toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+    }
 
-        cancelDelete.addEventListener('click', () => {
-            confirmDialog.classList.remove('open');
-            pendingDeleteIndex = null;
-        });
+    // ════════════════════════════════════════════════════
+    // DELETE DIALOG
+    // ════════════════════════════════════════════════════
+    const confirmDialog = document.getElementById('confirmDialog');
+    const dialogMsg     = document.getElementById('dialogMsg');
+    const cancelDelete  = document.getElementById('cancelDelete');
+    const confirmDelete = document.getElementById('confirmDelete');
 
-        confirmDelete.addEventListener('click', () => {
-            if (pendingDeleteIndex !== null) {
-                designs.splice(pendingDeleteIndex, 1);
-                persist();
-                renderGallery();
-                showToast('success', '✓ Diseño eliminado');
-            }
-            confirmDialog.classList.remove('open');
-            pendingDeleteIndex = null;
-        });
-
-        confirmDialog.addEventListener('click', (e) => {
-            if (e.target === confirmDialog) {
-                confirmDialog.classList.remove('open');
-                pendingDeleteIndex = null;
-            }
-        });
-
-        // ── Render ─────────────────────────────────────────────────────
-        function renderGallery() {
-            const favCount = designs.filter(d => d.fav).length;
-            favCountBadge.textContent = favCount;
-
-            let filtered = currentFilter === 'all'
-                ? designs
-                : designs.filter(d => d.style === currentFilter);
-
-            if (showFavsOnly) {
-                filtered = filtered.filter(d => d.fav);
-            }
-
-            const total = designs.length;
-            countBadge.textContent = showFavsOnly ? filtered.length : (currentFilter === 'all' ? total : filtered.length);
-            navCount.textContent = `${total} diseño${total !== 1 ? 's' : ''}`;
-
-            gallery.innerHTML = '';
-
-            if (filtered.length === 0) {
-                const emptyMsg = showFavsOnly
-                    ? 'Sin favoritos aún'
-                    : (currentFilter === 'all' ? 'Aún no hay diseños' : 'Sin diseños en esta categoría');
-                const emptyHint = showFavsOnly
-                    ? 'Toca el ♥ en cualquier diseño para guardarlo aquí.'
-                    : (currentFilter === 'all' ? 'Sube tu primer diseño en el panel izquierdo.' : 'Prueba otro filtro o sube un diseño de este estilo.');
-                gallery.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon" aria-hidden="true">${showFavsOnly ? '♥' : '🖊'}</div>
-                        <p>${emptyMsg}</p>
-                        <span>${emptyHint}</span>
-                    </div>`;
-                return;
-            }
-
-            filtered.forEach((design) => {
-                const realIndex = designs.indexOf(design);
-                const dateStr = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(design.date));
-                const isFav = !!design.fav;
-
-                const card = document.createElement('article');
-                card.className = 'design-card';
-                card.setAttribute('role', 'listitem');
-                card.innerHTML = `
-                    <div class="card-img-wrap">
-                        <img src="${design.image}" alt="Diseño de tatuaje: ${design.name}" width="400" height="400" loading="lazy">
-                        ${design.style ? `<span class="card-style-tag">${design.style}</span>` : ''}
-                        <button class="btn-fav ${isFav ? 'active' : ''}" aria-label="${isFav ? 'Quitar de favoritos' : 'Agregar a favoritos'}: ${design.name}" aria-pressed="${isFav}">
-                            <span class="heart" aria-hidden="true">${isFav ? '♥' : '♡'}</span>
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div class="card-name">${design.name}</div>
-                        <p class="card-prompt">${design.prompt}</p>
-                        <div class="card-footer">
-                            <span class="card-date">${dateStr}</span>
-                            <button class="btn btn-danger" aria-label="Eliminar diseño ${design.name}">Eliminar</button>
-                        </div>
-                    </div>`;
-
-                card.querySelector('.btn-fav').addEventListener('click', () => toggleFav(design.id));
-                card.querySelector('.btn-danger').addEventListener('click', () => askDelete(realIndex));
-                gallery.appendChild(card);
-            });
-        }
-
-        // ── Auth check ─────────────────────────────────────────
-        let currentUser = null;
-        try {
-            currentUser = JSON.parse(localStorage.getItem('inkVaultUser') || 'null');
-        } catch {}
-
-        if (!currentUser) {
-            window.location.href = 'index.html';
+    function askDelete(type, id, name) {
+        pendingDelete = { type, id };
+        dialogMsg.textContent = `"${name}" se eliminará permanentemente.`;
+        confirmDialog.classList.add('open');
+        confirmDelete.focus();
+    }
+    cancelDelete.addEventListener('click', () => { confirmDialog.classList.remove('open'); pendingDelete = null; });
+    confirmDialog.addEventListener('click', e => { if (e.target === confirmDialog) { confirmDialog.classList.remove('open'); pendingDelete = null; } });
+    confirmDelete.addEventListener('click', () => {
+        if (!pendingDelete) return;
+        if (pendingDelete.type === 'design') {
+            designs = designs.filter(d => d.id !== pendingDelete.id);
+            persistDesigns(); renderGallery();
         } else {
-            const initials = currentUser.name
-                ? currentUser.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
-                : '?';
-            document.getElementById('navAvatar').textContent = initials;
-            document.getElementById('navName').textContent = currentUser.name || 'Invitado';
+            prompts = prompts.filter(p => p.id !== pendingDelete.id);
+            persistPrompts(); renderPrompts();
         }
+        showToast('success', '✓ Eliminado');
+        confirmDialog.classList.remove('open'); pendingDelete = null;
+    });
 
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            try { localStorage.removeItem('inkVaultUser'); } catch {}
-            window.location.href = 'index.html';
+    // ════════════════════════════════════════════════════
+    // TATUAJES MODULE
+    // ════════════════════════════════════════════════════
+    const form       = document.getElementById('designForm');
+    const nameInput  = document.getElementById('designName');
+    const styleInput = document.getElementById('designStyle');
+    const promptInput= document.getElementById('designPrompt');
+    const imageInput = document.getElementById('designImage');
+    const dropZone   = document.getElementById('dropZone');
+    const previewWrap= document.getElementById('previewWrap');
+    const filePreview= document.getElementById('filePreview');
+    const clearBtn   = document.getElementById('clearPreview');
+    const submitBtn  = document.getElementById('submitBtn');
+    const spinner    = document.getElementById('spinner');
+    const submitLabel= document.getElementById('submitLabel');
+    const countBadge = document.getElementById('countBadge');
+    const favCountBadge = document.getElementById('favCountBadge');
+    const viewAllBtn = document.getElementById('viewAll');
+    const viewFavsBtn= document.getElementById('viewFavs');
+    const gallery    = document.getElementById('gallery');
+    let currentImageData = null;
+
+    // Drop zone
+    function setPreview(url) { currentImageData = url; filePreview.src = url; previewWrap.style.display='block'; previewWrap.removeAttribute('aria-hidden'); dropZone.style.display='none'; }
+    function clearPreviewFn() { currentImageData = null; filePreview.src=''; previewWrap.style.display='none'; previewWrap.setAttribute('aria-hidden','true'); dropZone.style.display=''; imageInput.value=''; }
+
+    imageInput.addEventListener('change', e => { const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=ev=>setPreview(ev.target.result); r.readAsDataURL(f); });
+    clearBtn.addEventListener('click', clearPreviewFn);
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); const f=e.dataTransfer?.files[0]; if(!f||!f.type.startsWith('image/')) return; const r=new FileReader(); r.onload=ev=>setPreview(ev.target.result); r.readAsDataURL(f); });
+    dropZone.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){e.preventDefault();imageInput.click();} });
+
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+        if (!currentImageData) { showToast('error','✗ Selecciona una imagen'); return; }
+        if (!nameInput.value.trim()) { nameInput.focus(); return; }
+        if (!promptInput.value.trim()) { promptInput.focus(); return; }
+        submitBtn.disabled=true; spinner.style.display='block'; submitLabel.textContent='Guardando…';
+        await new Promise(r=>setTimeout(r,280));
+        designs.unshift({ id:Date.now(), name:nameInput.value.trim(), style:styleInput.value, prompt:promptInput.value.trim(), image:currentImageData, date:new Date().toISOString(), fav:false });
+        persistDesigns();
+        submitBtn.disabled=false; spinner.style.display='none'; submitLabel.textContent='Guardar Diseño';
+        form.reset(); clearPreviewFn(); renderGallery();
+        showToast('success','✓ Diseño guardado');
+    });
+
+    // Filters
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelector('.filter-btn.active').classList.remove('active');
+            btn.classList.add('active'); currentFilter = btn.dataset.filter; renderGallery();
         });
+    });
 
-        // Initial render
-        renderGallery();
+    viewAllBtn.addEventListener('click', () => {
+        showFavsOnly=false; viewAllBtn.classList.add('active'); viewAllBtn.setAttribute('aria-pressed','true');
+        viewFavsBtn.classList.remove('active'); viewFavsBtn.setAttribute('aria-pressed','false'); renderGallery();
+    });
+    viewFavsBtn.addEventListener('click', () => {
+        showFavsOnly=true; viewFavsBtn.classList.add('active'); viewFavsBtn.setAttribute('aria-pressed','true');
+        viewAllBtn.classList.remove('active'); viewAllBtn.setAttribute('aria-pressed','false'); renderGallery();
+    });
+
+    function toggleFav(id) {
+        const d = designs.find(x=>x.id===id); if(!d) return;
+        d.fav = !d.fav; persistDesigns(); renderGallery();
+        showToast('success', d.fav ? '♥ Agregado a favoritos' : '♡ Quitado de favoritos');
+    }
+
+    function renderGallery() {
+        const favs = designs.filter(d=>d.fav).length;
+        const total = designs.length;
+        favCountBadge.textContent = favs;
+        document.getElementById('sidefavs').textContent = favs;
+        document.getElementById('sidetatu').textContent = total;
+        document.getElementById('navCount').textContent = `${total} diseño${total!==1?'s':''}`;
+
+        let list = currentFilter==='all' ? [...designs] : designs.filter(d=>d.style===currentFilter);
+        if (showFavsOnly) list = list.filter(d=>d.fav);
+        countBadge.textContent = list.length;
+
+        gallery.innerHTML='';
+        if (!list.length) {
+            const msg  = showFavsOnly ? 'Sin favoritos aún' : (currentFilter==='all' ? 'Aún no hay diseños' : 'Sin diseños en esta categoría');
+            const hint = showFavsOnly ? 'Toca ♥ en un diseño para guardarlo aquí.' : (currentFilter==='all' ? 'Sube tu primer diseño.' : 'Prueba otro filtro.');
+            gallery.innerHTML=`<div class="empty-state"><div class="empty-icon" aria-hidden="true">${showFavsOnly?'♥':'🖊'}</div><p>${msg}</p><span>${hint}</span></div>`;
+            return;
+        }
+        list.forEach(design => {
+            const realIdx = designs.indexOf(design);
+            const dateStr = new Intl.DateTimeFormat('es-ES',{day:'numeric',month:'short',year:'numeric'}).format(new Date(design.date));
+            const isFav = !!design.fav;
+            const card = document.createElement('article');
+            card.className='design-card'; card.setAttribute('role','listitem');
+            card.innerHTML=`
+                <div class="card-img-wrap">
+                    <img src="${design.image}" alt="Diseño: ${design.name}" width="400" height="400" loading="lazy">
+                    ${design.style?`<span class="card-style-tag">${design.style}</span>`:''}
+                    <button class="btn-fav ${isFav?'active':''}" aria-label="${isFav?'Quitar de':'Agregar a'} favoritos: ${design.name}" aria-pressed="${isFav}">
+                        <span class="heart" aria-hidden="true">${isFav?'♥':'♡'}</span>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">${design.name}</div>
+                    <p class="card-prompt">${design.prompt}</p>
+                    <div class="card-footer">
+                        <span class="card-date">${dateStr}</span>
+                        <button class="btn btn-danger" aria-label="Eliminar ${design.name}">Eliminar</button>
+                    </div>
+                </div>`;
+            card.querySelector('.btn-fav').addEventListener('click', () => toggleFav(design.id));
+            card.querySelector('.btn-danger').addEventListener('click', () => askDelete('design', design.id, design.name));
+            gallery.appendChild(card);
+        });
+    }
+
+    // ════════════════════════════════════════════════════
+    // PROMPTS MODULE
+    // ════════════════════════════════════════════════════
+    const promptForm    = document.getElementById('promptForm');
+    const promptTitle   = document.getElementById('promptTitle');
+    const promptCat     = document.getElementById('promptCat');
+    const promptBody    = document.getElementById('promptBody');
+    const promptList    = document.getElementById('promptList');
+
+    promptForm.addEventListener('submit', e => {
+        e.preventDefault();
+        if (!promptTitle.value.trim() || !promptBody.value.trim()) return;
+        prompts.unshift({ id:Date.now(), title:promptTitle.value.trim(), cat:promptCat.value, body:promptBody.value.trim(), date:new Date().toISOString() });
+        persistPrompts(); promptForm.reset(); renderPrompts();
+        showToast('success','✓ Prompt guardado');
+    });
+
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelector('.cat-btn.active').classList.remove('active');
+            btn.classList.add('active'); currentPromCat = btn.dataset.cat; renderPrompts();
+        });
+    });
+
+    function renderPrompts() {
+        const list = currentPromCat==='all' ? prompts : prompts.filter(p=>p.cat===currentPromCat);
+        document.getElementById('sideprompts').textContent = prompts.length;
+        promptList.innerHTML='';
+        if (!list.length) {
+            promptList.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon" aria-hidden="true">✍</div><p>${currentPromCat==='all'?'Aún no hay prompts':'Sin prompts en esta categoría'}</p><span>Escribe y guarda tus prompts para reutilizarlos.</span></div>`;
+            return;
+        }
+        list.forEach(p => {
+            const card = document.createElement('article');
+            card.className='prompt-card'; card.setAttribute('role','listitem');
+            card.innerHTML=`
+                <span class="prompt-card-tag">${p.cat}</span>
+                <div class="prompt-card-title">${p.title}</div>
+                <p class="prompt-card-body">${p.body}</p>
+                <div class="prompt-card-footer">
+                    <button class="btn-copy" aria-label="Copiar prompt ${p.title}">📋 Copiar</button>
+                    <button class="btn-del-prompt" aria-label="Eliminar prompt ${p.title}">Eliminar</button>
+                </div>`;
+            card.querySelector('.btn-copy').addEventListener('click', () => {
+                navigator.clipboard.writeText(p.body).then(()=>showToast('success','📋 Prompt copiado')).catch(()=>showToast('error','No se pudo copiar'));
+            });
+            card.querySelector('.btn-del-prompt').addEventListener('click', () => askDelete('prompt', p.id, p.title));
+            promptList.appendChild(card);
+        });
+    }
+
+    // ════════════════════════════════════════════════════
+    // TEMAS MODULE
+    // ════════════════════════════════════════════════════
+    const THEMES = [
+        { id:'orange', name:'Naranja',   desc:'Cálido y energético',   color:'#f97316', bg:'#431407' },
+        { id:'blue',   name:'Azul',      desc:'Frío y tecnológico',    color:'#3b82f6', bg:'#1e3a5f' },
+        { id:'purple', name:'Violeta',   desc:'Misterioso y creativo', color:'#8b5cf6', bg:'#2e1065' },
+        { id:'pink',   name:'Rosa',      desc:'Vibrante y moderno',    color:'#ec4899', bg:'#500724' },
+        { id:'green',  name:'Verde',     desc:'Natural y equilibrado', color:'#22c55e', bg:'#052e16' },
+        { id:'red',    name:'Rojo',      desc:'Intenso y dramático',   color:'#ef4444', bg:'#450a0a' },
+        { id:'cyan',   name:'Cian',      desc:'Limpio y futurista',    color:'#06b6d4', bg:'#083344' },
+        { id:'gold',   name:'Dorado',    desc:'Elegante y lujoso',     color:'#eab308', bg:'#422006' },
+    ];
+
+    let currentTheme = 'orange';
+    try { currentTheme = localStorage.getItem('inkVaultTheme') || 'orange'; } catch {}
+    applyTheme(currentTheme, false);
+
+    function applyTheme(id, save=true) {
+        currentTheme = id;
+        document.documentElement.setAttribute('data-theme', id);
+        if (save) try { localStorage.setItem('inkVaultTheme', id); } catch {}
+    }
+
+    function renderThemes() {
+        const grid = document.querySelector('.themes-grid');
+        grid.innerHTML = '';
+        THEMES.forEach(t => {
+            const card = document.createElement('div');
+            card.className = `theme-card${currentTheme===t.id?' selected':''}`;
+            card.setAttribute('role','radio');
+            card.setAttribute('aria-checked', currentTheme===t.id ? 'true' : 'false');
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('aria-label', `Tema ${t.name}`);
+            card.innerHTML=`
+                <div class="theme-preview" style="background:${t.bg};">
+                    <div class="theme-dot" style="background:${t.color};box-shadow:0 0 10px ${t.color}66;"></div>
+                    <div class="theme-dot theme-dot-bg"></div>
+                    <div class="theme-dot" style="background:${t.color};opacity:.5;"></div>
+                </div>
+                <div class="theme-name">${t.name}</div>
+                <div class="theme-desc">${t.desc}</div>
+                <div class="theme-check" aria-hidden="true">✓</div>`;
+            card.addEventListener('click', () => { applyTheme(t.id); renderThemes(); showToast('success',`🎨 Tema ${t.name} aplicado`); });
+            card.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){e.preventDefault();card.click();} });
+            grid.appendChild(card);
+        });
+    }
+
+    // ════════════════════════════════════════════════════
+    // INIT
+    // ════════════════════════════════════════════════════
+    renderGallery();
+    renderPrompts();
+    renderThemes();
     </script>
 </body>
 </html>
