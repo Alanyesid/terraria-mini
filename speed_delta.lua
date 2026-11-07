@@ -53,7 +53,12 @@
         sin que tengas que estar tocando. Ajusta los golpes por segundo.
       - No sirve ni se usa contra otros jugadores.
 
-    El panel tiene pestañas arriba: toca VEL, TP, AUTO, EXTRA o GOLPE
+    MIRA
+      - Dibuja una retícula fija en el centro de la pantalla, con
+        contorno negro para que no se pierda y no se mueve al apuntar.
+      - Ajusta color, tamaño, grosor y hueco; es solo visual.
+
+    El panel tiene pestañas arriba: toca VEL, TP, AUTO, EXTRA, GOLPE o MIRA
     para ver solo ese módulo y que ocupe menos espacio.
     El encabezado muestra los FPS y el ping.
 ]]
@@ -124,6 +129,20 @@ local saltoAlto      = false
 local saltoInfinito  = false
 local autoGolpe      = false
 local golpesPorSeg   = 10
+local miraOn         = false
+local miraTam        = 14
+local miraGros       = 3
+local miraHueco      = 6
+local miraColorIdx   = 1
+
+local MIRA_COLORES = {
+    { "Verde",    Color3.fromRGB(0, 255, 100) },
+    { "Blanco",   Color3.fromRGB(255, 255, 255) },
+    { "Rojo",     Color3.fromRGB(255, 40, 40) },
+    { "Amarillo", Color3.fromRGB(255, 230, 0) },
+    { "Cian",     Color3.fromRGB(0, 220, 255) },
+    { "Rosa",     Color3.fromRGB(255, 60, 200) },
+}
 local pestana        = 3     -- pestaña mostrada al abrir (3 = AUTO)
 local sucio          = false -- hay cambios sin guardar
 
@@ -187,6 +206,14 @@ if config then
     if type(config.golpesPorSeg) == "number" then
         golpesPorSeg = math.clamp(math.floor(config.golpesPorSeg), 1, 40)
     end
+    local m = config.mira
+    if type(m) == "table" then
+        miraOn = m.on == true
+        if type(m.tam) == "number" then miraTam = math.clamp(math.floor(m.tam), 2, 60) end
+        if type(m.gros) == "number" then miraGros = math.clamp(math.floor(m.gros), 1, 10) end
+        if type(m.hueco) == "number" then miraHueco = math.clamp(math.floor(m.hueco), 0, 40) end
+        if type(m.color) == "number" then miraColorIdx = math.clamp(math.floor(m.color), 1, #MIRA_COLORES) end
+    end
     if type(config.pestana) == "number" then pestana = config.pestana end
     local puntos = type(config.puntos) == "table" and config.puntos[tostring(game.PlaceId)]
     if type(puntos) == "table" then
@@ -212,6 +239,8 @@ local guiParent = (gethui and gethui()) or game:GetService("CoreGui")
 pcall(function()
     local viejo = guiParent:FindFirstChild("SpeedHubGui")
     if viejo then viejo:Destroy() end
+    local viejaMira = guiParent:FindFirstChild("SpeedHubMira")
+    if viejaMira then viejaMira:Destroy() end
 end)
 
 local gui = Instance.new("ScreenGui")
@@ -561,6 +590,22 @@ local btnGolpeMas  = crearBoton("+", 186, 66, 32, 26, tGolpe)
 local lblHerramienta = crearLabel("Herramienta: ninguna", 96, tGolpe, TENUE, 12)
 btnGolpe.TextSize = 12
 
+-- [06] Mira
+local tMira = crearTarjeta("06", "MIRA // retícula", 160, "MIRA")
+local btnMira      = crearBoton("MIRA: OFF", 12, 30, 100, 32, tMira)
+local btnMiraColor = crearBoton("Color", 118, 30, 100, 32, tMira)
+local lblMiraTam   = crearLabel("Tamaño: 14", 70, tMira, TEXTO, 12)
+local btnTamMenos  = crearBoton("-", 150, 66, 30, 26, tMira)
+local btnTamMas    = crearBoton("+", 186, 66, 32, 26, tMira)
+local lblMiraGros  = crearLabel("Grosor: 3", 100, tMira, TEXTO, 12)
+local btnGrosMenos = crearBoton("-", 150, 96, 30, 26, tMira)
+local btnGrosMas   = crearBoton("+", 186, 96, 32, 26, tMira)
+local lblMiraHueco = crearLabel("Hueco: 6", 130, tMira, TEXTO, 12)
+local btnHuecoMenos= crearBoton("-", 150, 126, 30, 26, tMira)
+local btnHuecoMas  = crearBoton("+", 186, 126, 32, 26, tMira)
+btnMira.TextSize = 12
+btnMiraColor.TextSize = 12
+
 
 local function setEstado(texto)
     lblEstado.Text = "> " .. texto
@@ -580,6 +625,10 @@ local function actualizarUI()
     estiloToggle(btnSaltoInf, saltoInfinito, "SALTO INF: ON", "SALTO INF: OFF")
     estiloToggle(btnGolpe, autoGolpe, "AUTO-GOLPE: ON", "AUTO-GOLPE: OFF")
     lblGolpeVel.Text = "Golpes/seg: " .. golpesPorSeg
+    estiloToggle(btnMira, miraOn, "MIRA: ON", "MIRA: OFF")
+    lblMiraTam.Text = "Tamaño: " .. miraTam
+    lblMiraGros.Text = "Grosor: " .. miraGros
+    lblMiraHueco.Text = "Hueco: " .. miraHueco
     sucio = true
 end
 
@@ -616,14 +665,18 @@ local function mostrarModulo(i)
 end
 
 do
-    local ancho, paso, x0 = 43, 47, 8
+    local n = #tarjetas
+    local x0, gap = 8, 3
+    local util = ANCHO_PANEL - x0 * 2
+    local ancho = math.floor((util - gap * (n - 1)) / n)
+    local paso = ancho + gap
     for idx, info in ipairs(tarjetas) do
         local b = Instance.new("TextButton")
         b.Size = UDim2.new(0, ancho, 0, 26)
         b.Position = UDim2.new(0, x0 + (idx - 1) * paso, 0, 5)
         b.BackgroundColor3 = BOTON
         b.Font = FUENTE
-        b.TextSize = 11
+        b.TextSize = 10
         b.TextColor3 = TENUE
         b.Text = info.tab
         b.AutoButtonColor = true
@@ -1159,6 +1212,84 @@ table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
 end))
 
 ----------------------------------------------------------------
+-- MÓDULO: MIRA (retícula fija con contorno, solo visual)
+----------------------------------------------------------------
+local miraGui = Instance.new("ScreenGui")
+miraGui.Name = "SpeedHubMira"
+miraGui.ResetOnSpawn = false
+miraGui.IgnoreGuiInset = true
+miraGui.DisplayOrder = -1
+miraGui.Parent = guiParent
+
+-- Cada línea lleva su propio contorno negro (UIStroke)
+local function nuevaLinea()
+    local l = Instance.new("Frame")
+    l.AnchorPoint = Vector2.new(0.5, 0.5)
+    l.BorderSizePixel = 0
+    l.Active = false
+    l.Visible = false
+    l.ZIndex = 2
+    l.Parent = miraGui
+    local st = Instance.new("UIStroke")
+    st.Color = Color3.new(0, 0, 0)
+    st.Thickness = 1.5
+    st.Transparency = 0.1
+    st.Parent = l
+    return l
+end
+
+local mTop, mBot, mLeft, mRight = nuevaLinea(), nuevaLinea(), nuevaLinea(), nuevaLinea()
+
+local function actualizarMira()
+    local color = MIRA_COLORES[miraColorIdx][2]
+    for _, l in ipairs({ mTop, mBot, mLeft, mRight }) do
+        l.BackgroundColor3 = color
+        l.Visible = miraOn
+    end
+    local medio = miraHueco + miraTam / 2
+    mTop.Size    = UDim2.new(0, miraGros, 0, miraTam)
+    mBot.Size    = UDim2.new(0, miraGros, 0, miraTam)
+    mLeft.Size   = UDim2.new(0, miraTam, 0, miraGros)
+    mRight.Size  = UDim2.new(0, miraTam, 0, miraGros)
+    mTop.Position   = UDim2.new(0.5, 0, 0.5, -medio)
+    mBot.Position   = UDim2.new(0.5, 0, 0.5, medio)
+    mLeft.Position  = UDim2.new(0.5, -medio, 0.5, 0)
+    mRight.Position = UDim2.new(0.5, medio, 0.5, 0)
+end
+
+btnMira.MouseButton1Click:Connect(function()
+    miraOn = not miraOn
+    actualizarMira()
+    setEstado(miraOn and "Mira activada" or "Mira apagada")
+    actualizarUI()
+end)
+
+btnMiraColor.MouseButton1Click:Connect(function()
+    miraColorIdx = miraColorIdx % #MIRA_COLORES + 1
+    actualizarMira()
+    setEstado("Color: " .. MIRA_COLORES[miraColorIdx][1])
+end)
+
+btnTamMas.MouseButton1Click:Connect(function()
+    miraTam = math.min(60, miraTam + 2); actualizarMira(); actualizarUI()
+end)
+btnTamMenos.MouseButton1Click:Connect(function()
+    miraTam = math.max(2, miraTam - 2); actualizarMira(); actualizarUI()
+end)
+btnGrosMas.MouseButton1Click:Connect(function()
+    miraGros = math.min(10, miraGros + 1); actualizarMira(); actualizarUI()
+end)
+btnGrosMenos.MouseButton1Click:Connect(function()
+    miraGros = math.max(1, miraGros - 1); actualizarMira(); actualizarUI()
+end)
+btnHuecoMas.MouseButton1Click:Connect(function()
+    miraHueco = math.min(40, miraHueco + 2); actualizarMira(); actualizarUI()
+end)
+btnHuecoMenos.MouseButton1Click:Connect(function()
+    miraHueco = math.max(0, miraHueco - 2); actualizarMira(); actualizarUI()
+end)
+
+----------------------------------------------------------------
 -- MÓDULO: INVENCIBLE
 ----------------------------------------------------------------
 local function aplicarInvencible()
@@ -1388,6 +1519,8 @@ local function guardar()
     datos.saltoInfinito = saltoInfinito
     datos.autoGolpe     = autoGolpe
     datos.golpesPorSeg  = golpesPorSeg
+    datos.mira = { on = miraOn, tam = miraTam, gros = miraGros,
+                   hueco = miraHueco, color = miraColorIdx }
     datos.pestana       = pestana
     local pos = frame.Position
     datos.panel = { pos.X.Scale, pos.X.Offset, pos.Y.Scale, pos.Y.Offset }
@@ -1435,6 +1568,7 @@ local function cerrar()
     local hum = getHumanoid()
     if hum then hum.WalkSpeed = VELOCIDAD_NORMAL end
     if gui then gui:Destroy() end
+    if miraGui then miraGui:Destroy() end
     _G.SpeedHubCerrar = nil
 end
 
@@ -1452,6 +1586,7 @@ txtVel.Text = tostring(VELOCIDAD_ELEGIDA)
 aplicarVelocidad()
 aplicarSalto()
 mostrarModulo(pestana)
+actualizarMira()
 if config then
     setEstado("Configuración cargada")
 elseif activo then
