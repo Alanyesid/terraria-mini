@@ -716,6 +716,105 @@
             font-variant-numeric: tabular-nums;
         }
 
+        /* ── Fav button on image ─── */
+        .btn-fav {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .btn-fav { transition: background 0.2s; }
+        }
+
+        .btn-fav:hover {
+            background: rgba(239,68,68,0.5);
+            transform: scale(1.15);
+        }
+
+        .btn-fav:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .btn-fav.active {
+            background: rgba(239,68,68,0.3);
+        }
+
+        .btn-fav .heart {
+            transition: transform 0.2s;
+            display: block;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .btn-fav .heart { transition: none; }
+        }
+
+        .btn-fav.active .heart {
+            transform: scale(1.2);
+        }
+
+        /* ── Fav view toggle in header ─── */
+        .view-tabs {
+            display: flex;
+            gap: 6px;
+        }
+
+        .view-tab {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .view-tab:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .view-tab.active {
+            background: rgba(239,68,68,0.15);
+            border-color: rgba(239,68,68,0.5);
+            color: #fca5a5;
+        }
+
+        .view-tab:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .fav-count {
+            background: rgba(239,68,68,0.25);
+            color: #fca5a5;
+            border-radius: 10px;
+            padding: 1px 7px;
+            font-size: 0.72rem;
+            font-variant-numeric: tabular-nums;
+        }
+
         /* ───── Empty ───── */
         .empty-state {
             grid-column: 1 / -1;
@@ -935,7 +1034,12 @@
         <section aria-label="Galería de diseños">
             <div class="gallery-header">
                 <h2 class="gallery-title">Galería</h2>
-                <span class="count-badge" id="countBadge" aria-live="polite">0</span>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="view-tabs" role="group" aria-label="Vista de galería">
+                        <button class="view-tab active" id="viewAll" aria-pressed="true">Todos <span class="count-badge" id="countBadge" aria-live="polite">0</span></button>
+                        <button class="view-tab" id="viewFavs" aria-pressed="false">♥ Favoritos <span class="fav-count" id="favCountBadge" aria-live="polite">0</span></button>
+                    </div>
+                </div>
             </div>
 
             <!-- Filters -->
@@ -1020,6 +1124,7 @@
         let designs = [];
         let currentFilter = 'all';
         let pendingDeleteIndex = null;
+        let showFavsOnly = false;
 
         // ── Load from localStorage ─────────────────────────────────────
         try {
@@ -1045,7 +1150,10 @@
         const spinner = document.getElementById('spinner');
         const submitLabel = document.getElementById('submitLabel');
         const countBadge = document.getElementById('countBadge');
+        const favCountBadge = document.getElementById('favCountBadge');
         const navCount = document.getElementById('navCount');
+        const viewAllBtn = document.getElementById('viewAll');
+        const viewFavsBtn = document.getElementById('viewFavs');
         const toastSuccess = document.getElementById('toastSuccess');
         const toastError = document.getElementById('toastError');
         const confirmDialog = document.getElementById('confirmDialog');
@@ -1159,6 +1267,35 @@
             });
         });
 
+        // ── View tabs (Todos / Favoritos) ──────────────────────────────
+        viewAllBtn.addEventListener('click', () => {
+            showFavsOnly = false;
+            viewAllBtn.classList.add('active');
+            viewAllBtn.setAttribute('aria-pressed', 'true');
+            viewFavsBtn.classList.remove('active');
+            viewFavsBtn.setAttribute('aria-pressed', 'false');
+            renderGallery();
+        });
+
+        viewFavsBtn.addEventListener('click', () => {
+            showFavsOnly = true;
+            viewFavsBtn.classList.add('active');
+            viewFavsBtn.setAttribute('aria-pressed', 'true');
+            viewAllBtn.classList.remove('active');
+            viewAllBtn.setAttribute('aria-pressed', 'false');
+            renderGallery();
+        });
+
+        // ── Toggle Favorite ────────────────────────────────────────────
+        function toggleFav(id) {
+            const idx = designs.findIndex(d => d.id === id);
+            if (idx === -1) return;
+            designs[idx].fav = !designs[idx].fav;
+            persist();
+            renderGallery();
+            showToast('success', designs[idx].fav ? '♥ Agregado a favoritos' : '♡ Quitado de favoritos');
+        }
+
         // ── Delete Dialog ──────────────────────────────────────────────
         function askDelete(index) {
             pendingDeleteIndex = index;
@@ -1191,29 +1328,43 @@
 
         // ── Render ─────────────────────────────────────────────────────
         function renderGallery() {
-            const filtered = currentFilter === 'all'
+            const favCount = designs.filter(d => d.fav).length;
+            favCountBadge.textContent = favCount;
+
+            let filtered = currentFilter === 'all'
                 ? designs
                 : designs.filter(d => d.style === currentFilter);
 
+            if (showFavsOnly) {
+                filtered = filtered.filter(d => d.fav);
+            }
+
             const total = designs.length;
-            countBadge.textContent = filtered.length;
+            countBadge.textContent = showFavsOnly ? filtered.length : (currentFilter === 'all' ? total : filtered.length);
             navCount.textContent = `${total} diseño${total !== 1 ? 's' : ''}`;
 
             gallery.innerHTML = '';
 
             if (filtered.length === 0) {
+                const emptyMsg = showFavsOnly
+                    ? 'Sin favoritos aún'
+                    : (currentFilter === 'all' ? 'Aún no hay diseños' : 'Sin diseños en esta categoría');
+                const emptyHint = showFavsOnly
+                    ? 'Toca el ♥ en cualquier diseño para guardarlo aquí.'
+                    : (currentFilter === 'all' ? 'Sube tu primer diseño en el panel izquierdo.' : 'Prueba otro filtro o sube un diseño de este estilo.');
                 gallery.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-icon" aria-hidden="true">🖊</div>
-                        <p>${currentFilter === 'all' ? 'Aún no hay diseños' : 'Sin diseños en esta categoría'}</p>
-                        <span>${currentFilter === 'all' ? 'Sube tu primer diseño en el panel izquierdo.' : 'Prueba otro filtro o sube un diseño de este estilo.'}</span>
+                        <div class="empty-icon" aria-hidden="true">${showFavsOnly ? '♥' : '🖊'}</div>
+                        <p>${emptyMsg}</p>
+                        <span>${emptyHint}</span>
                     </div>`;
                 return;
             }
 
-            filtered.forEach((design, i) => {
+            filtered.forEach((design) => {
                 const realIndex = designs.indexOf(design);
                 const dateStr = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(design.date));
+                const isFav = !!design.fav;
 
                 const card = document.createElement('article');
                 card.className = 'design-card';
@@ -1222,16 +1373,20 @@
                     <div class="card-img-wrap">
                         <img src="${design.image}" alt="Diseño de tatuaje: ${design.name}" width="400" height="400" loading="lazy">
                         ${design.style ? `<span class="card-style-tag">${design.style}</span>` : ''}
+                        <button class="btn-fav ${isFav ? 'active' : ''}" aria-label="${isFav ? 'Quitar de favoritos' : 'Agregar a favoritos'}: ${design.name}" aria-pressed="${isFav}">
+                            <span class="heart" aria-hidden="true">${isFav ? '♥' : '♡'}</span>
+                        </button>
                     </div>
                     <div class="card-body">
                         <div class="card-name">${design.name}</div>
                         <p class="card-prompt">${design.prompt}</p>
                         <div class="card-footer">
                             <span class="card-date">${dateStr}</span>
-                            <button class="btn btn-danger" data-index="${realIndex}" aria-label="Eliminar diseño ${design.name}">Eliminar</button>
+                            <button class="btn btn-danger" aria-label="Eliminar diseño ${design.name}">Eliminar</button>
                         </div>
                     </div>`;
 
+                card.querySelector('.btn-fav').addEventListener('click', () => toggleFav(design.id));
                 card.querySelector('.btn-danger').addEventListener('click', () => askDelete(realIndex));
                 gallery.appendChild(card);
             });
