@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="es" style="color-scheme: dark;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InkVault — Estudio Digital de Tatuajes</title>
+    <meta name="theme-color" content="#09090b">
+    <style>
+        :root {
+            --bg: #09090b;
+            --surface: rgba(24,24,27,0.92);
+            --border: rgba(63,63,70,0.7);
+            --text: #fafafa;
+            --text-muted: #a1a1aa;
+            --text-subtle: #71717a;
+            --accent: #f97316;
+            --accent-hover: #ea580c;
+            --accent-glow: rgba(249,115,22,0.3);
+            --red: #ef4444;
+            --green: #22c55e;
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── Background gallery ─────────────────────────── */
+        .bg-gallery {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 6px;
+            padding: 6px;
+            opacity: 0.35;
+            filter: grayscale(0.4);
+        }
+
+        .bg-card {
+            border-radius: 10px;
+            overflow: hidden;
+            background: #18181b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bg-card svg {
+            width: 85%;
+            height: 85%;
+        }
+
+        /* ── Overlay ───────────────────────────────────────── */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse 60% 80% at 50% 50%, rgba(9,9,11,0.55) 0%, rgba(9,9,11,0.92) 100%);
+        }
+
+        /* ── Main layout ───────────────────────────────────── */
+        .page {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* ── Left branding ─────────────────────────────────── */
+        .branding {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px 60px 60px 80px;
+        }
+
+        .logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 56px;
+        }
+
+        .logo-box {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent), #c2410c);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 8px 32px var(--accent-glow);
+        }
+
+        .logo-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .branding h1 {
+            font-size: clamp(2.4rem, 4vw, 3.6rem);
+            font-weight: 900;
+            line-height: 1.08;
+            letter-spacing: -0.04em;
+            text-wrap: balance;
+            margin-bottom: 20px;
+        }
+
+        .branding h1 .hl {
+            background: linear-gradient(135deg, var(--accent) 0%, #fbbf24 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .branding p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            line-height: 1.65;
+            max-width: 420px;
+            margin-bottom: 48px;
+            text-wrap: pretty;
+        }
+
+        .feature-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .feature-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(249,115,22,0.1);
+            border: 1px solid rgba(249,115,22,0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        /* ── Auth panel ────────────────────────────────────── */
+        .auth-panel {
+            width: 480px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 48px;
+            border-left: 1px solid var(--border);
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+        }
+
+        .auth-box {
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .tab-row {
+            display: flex;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 32px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 9px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .tab.active {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .auth-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .auth-sub {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-bottom: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 7px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.93rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input::placeholder { color: var(--text-subtle); }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .forgot {
+            display: block;
+            text-align: right;
+            font-size: 0.8rem;
+            color: var(--text-subtle);
+            text-decoration: none;
+            margin-top: -10px;
+            margin-bottom: 18px;
+        }
+
+        .forgot:hover { color: var(--accent); }
+        .forgot:focus-visible { outline: 2px solid var(--accent); border-radius: 3px; }
+
+        .btn-auth {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, var(--accent) 0%, #c2410c 100%);
+            color: white;
+            border: none;
+            border-radius: 9px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 6px 24px var(--accent-glow);
+            letter-spacing: 0.3px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .btn-auth { transition: box-shadow 0.15s; }
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 32px var(--accent-glow);
+        }
+
+        .btn-auth:active { transform: translateY(0); }
+
+        .btn-auth:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 22px 0;
+            color: var(--text-subtle);
+            font-size: 0.8rem;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .btn-guest {
+            width: 100%;
+            padding: 11px;
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            font-family: inherit;
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .btn-guest:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+        .btn-guest:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        .error-msg {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            color: #fca5a5;
+            margin-bottom: 18px;
+            display: none;
+        }
+
+        .error-msg.show { display: block; }
+
+        /* hidden form panels */
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+
+        /* ── Responsive ─────────────────────────────────────── */
+        @media (max-width: 1000px) {
+            .branding { display: none; }
+            .auth-panel { width: 100%; border-left: none; justify-content: center; }
+        }
+
+        /* ── Entrance animation ─────────────────────────────── */
+        @media (prefers-reduced-motion: no-preference) {
+            .auth-panel { animation: slideIn 0.5s ease; }
+            @keyframes slideIn {
+                from { opacity: 0; transform: translateX(20px); }
+                to   { opacity: 1; transform: translateX(0); }
+            }
+            .branding { animation: fadeUp 0.6s ease; }
+            @keyframes fadeUp {
+                from { opacity: 0; transform: translateY(16px); }
+                to   { opacity: 1; transform: translateY(0); }
+            }
+            .bg-card { animation: pulse 6s ease-in-out infinite; }
+            .bg-card:nth-child(odd) { animation-delay: -3s; }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.65; }
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background tattoo gallery -->
+    <div class="bg-gallery" aria-hidden="true">
+
+        <!-- Mandala Geometric -->
+        <div class="bg-card">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="100" cy="100" r="90" stroke="#f97316" stroke-width="1.5"/>
+                <circle cx="100" cy="100" r="70" stroke="#f97316" stroke-width="1"/>
+                <circle cx="100" cy="100" r="50" stroke="#f97316" stroke-width="1.5"/>
+                <circle cx="100" cy="100" r="30" stroke="#f97316" stroke-width="1"/>
+                <circle cx="100" cy="100" r="12" fill="#f97316" opacity="0.6"/>
+                <line x1="100" y1="10" x2="100" y2="190" stroke="#f97316" stroke-width="0.8"/>
+                <line x1="10" y1="100" x2="190" y2="100" stroke="#f97316" stroke-width="0.8"/>
+                <line x1="37" y1="37" x2="163" y2="163" stroke="#f97316" stroke-width="0.8"/>
+                <line x1="163" y1="37" x2="37" y2="163" stroke="#f97316" stroke-width="0.8"/>
+                <polygon points="100,20 116,60 160,60 126,84 140,128 100,104 60,128 74,84 40,60 84,60" stroke="#f97316" stroke-width="1" fill="none"/>
+                <circle cx="100" cy="10" r="4" fill="#f97316"/>
+                <circle cx="100" cy="190" r="4" fill="#f97316"/>
+                <circle cx="10" cy="100" r="4" fill="#f97316"/>
+                <circle cx="190" cy="100" r="4" fill="#f97316"/>
+            </svg>
+        </div>
+
+        <!-- Snake -->
+        <div class="bg-card">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M100 20 C140 20, 170 50, 170 80 C170 110, 140 120, 120 120 C100 120, 80 110, 80 90 C80 70, 100 60, 115 70 C130 80, 125 100, 110 100 C95 100, 90 88, 100 85" stroke="#f97316" stroke-width="4" stroke-linecap="round" fill="none"/>
+                <circle cx="100" cy="20" r="8" fill="#f97316"/>
+                <circle cx="97" cy="17" r="2.5" fill="#09090b"/>
+                <circle cx="103" cy="17" r="2.5" fill="#09090b"/>
+                <path d="M96 24 L100 30 L104 24" fill="#f97316"/>
+                <path d="M100 85 C95 85 85 90 80 100 C75 110 80 130 90 140 C100 150 115 148 125 140 C135 132 138 118 130 108" stroke="#f97316" stroke-width="4" stroke-linecap="round" fill="none"/>
+                <ellipse cx="100" cy="175" rx="18" ry="14" stroke="#f97316" stroke-width="2" fill="none"/>
+                <circle cx="100" cy="165" r="5" fill="#f97316" opacity="0.5"/>
+                <path d="M85 175 C88 170 92 168 100 168 C108 168 112 170 115 175" stroke="#f97316" stroke-width="1.5" fill="none"/>
+            </svg>
+        </div>
+
+        <!-- Wolf geometric -->
+        <div class="bg-card">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="100,15 50,70 30,140 100,170 170,140 150,70" stroke="#f97316" stroke-width="1.5" fill="none"/>
+                <polygon points="100,30 60,75 100,80 140,75" fill="#f97316" opacity="0.15" stroke="#f97316" stroke-width="1"/>
+                <polygon points="100,80 60,75 50,110 100,105" fill="#f97316" opacity="0.1"/>
+                <polygon points="100,80 140,75 150,110 100,105" fill="#f97316" opacity="0.1"/>
+                <circle cx="78" cy="68" r="7" fill="#09090b" stroke="#f97316" stroke-width="1.5"/>
+                <circle cx="122" cy="68" r="7" fill="#09090b" stroke="#f97316" stroke-width="1.5"/>
+                <circle cx="78" cy="68" r="3" fill="#f97316"/>
+                <circle cx="122" cy="68" r="3" fill="#f97316"/>
+                <path d="M88 90 L100 95 L112 90" stroke="#f97316" stroke-width="1.5" fill="none"/>
+                <path d="M55 50 L70 30 L80 60" stroke="#f97316" stroke-width="2" fill="none" stroke-linejoin="round"/>
+                <path d="M145 50 L130 30 L120 60" stroke="#f97316" stroke-width="2" fill="none" stroke-linejoin="round"/>
+                <path d="M50,140 L100,170 L150,140 L140,120 L100,135 L60,120 Z" stroke="#f97316" stroke-width="1" fill="#f97316" opacity="0.08"/>
+            </svg>
+        </div>
+
+        <!-- Compass Rose -->
+        <div class="bg-card">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="100" cy="100" r="88" stroke="#f97316" stroke-width="1.2"/>
+                <circle cx="100" cy="100" r="60" stroke="#f97316" stroke-width="0.8" stroke-dasharray="4 4"/>
+                <circle cx="100" cy="100" r="12" fill="#f97316"/>
+                <polygon points="100,15 108,88 100,98 92,88" fill="#f97316"/>
+                <polygon points="100,185 108,112 100,102 92,112" fill="#f97316" opacity="0.5"/>
+                <polygon points="15,100 88,92 98,100 88,108" fill="#f97316" opacity="0.5"/>
+                <polygon points="185,100 112,92 102,100 112,108" fill="#f97316"/>
+                <polygon points="37,37 83,83 93,78 90,65" fill="#f97316" opacity="0.4"/>
+                <polygon points="163,37 117,83 107,78 110,65" fill="#f97316" opacity="0.4"/>
+                <polygon points="37,163 83,117 83,107 70,110" fill="#f97316" opacity="0.4"/>
+                <polygon points="163,163 117,117 117,107 130,110" fill="#f97316" opacity="0.4"/>
+                <text x="100" y="10" text-anchor="middle" fill="#f97316" font-size="10" font-weight="bold">N</text>
+                <text x="100" y="198" text-anchor="middle" fill="#f97316" font-size="10">S</text>
+                <text x="6" y="104" text-anchor="middle" fill="#f97316" font-size="10">W</text>
+                <text x="196" y="104" text-anchor="middle" fill="#f97316" font-size="10">E</text>
+            </svg>
+        </div>
+
+        <!-- Rose Blackwork -->
+        <div class="bg-card">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M100 170 L100 90" stroke="#f97316" stroke-width="3" stroke-linecap="round"/>
+                <path d="M100 130 Q70 110 65 90 Q70 85 80 95 Q85 80 100 85" stroke="#f97316" stroke-width="1.5" fill="none"/>
+                <path d="M100 148 Q130 128 135 108 Q130 103 120 113 Q115 98 100 103" stroke="#f97316" stroke-width="1.5" fill="none"/>
+                <path d="M80 60 Q95 40 100 35 Q105 40 120 60 Q115 75 100 80 Q85 75 80 60Z" fill="#f97316" opacity="0.2" stroke="#f97316" stroke-width="1.5"/>
+                <path d="M70 65 Q60 50 65 40 Q75 50 80 60" fill="#f97316" opacity="0.15" stroke="#f97316" stroke-width="1.2"/>
+                <path d="M130 65 Q140 50 135 40 Q125 50 120 60" fill="#f97316" opacity="0.15" stroke="#f97316" stroke-width="1.2"/>
+                <path d="M85 55 Q90 45 100 42 Q110 45 115 55 Q110 65 100 68 Q90 65 85 55Z" fill="#f97316" opacity="0.3"/>
+                <ellipse cx="100" cy="50" rx="8" ry="10" fill="#f97316" opacity="0.5"/>
+                <circle cx="80" cy="140" r="4" fill="none" stroke="#f97316" stroke-width="1.5"/>
+                <path d="M76 140 Q70 148 72 158" stroke="#f97316" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+        </div>
+
+        <!-- Skull -->
+        <div class="bg-card">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 100 Q50 50 100 45 Q150 50 150 100 L150 125 L130 125 L130 145 L70 145 L70 125 L50 125 Z" stroke="#f97316" stroke-width="2" fill="none"/>
+                <ellipse cx="80" cy="90" rx="18" ry="22" fill="#09090b" stroke="#f97316" stroke-width="1.5"/>
+                <ellipse cx="120" cy="90" rx="18" ry="22" fill="#09090b" stroke="#f97316" stroke-width="1.5"/>
+                <circle cx="80" cy="90" r="8" fill="#f97316" opacity="0.4"/>
+                <circle cx="120" cy="90" r="8" fill="#f97316" opacity="0.4"/>
+                <path d="M88 118 L92 118 L92 125 L96 125 L96 118 L100 118 L100 125 L104 125 L104 118 L108 118 L112 118 L112 125 L108 125" stroke="#f97316" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                <line x1="100" y1="118" x2="100" y2="145" stroke="#f97316" stroke-width="1.2"/>
+                <path d="M70 125 L130 125" stroke="#f97316" stroke-width="1"/>
+                <path d="M55 90 Q52 70 60 55" stroke="#f97316" stroke-width="1" fill="none" opacity="0.6"/>
+                <path d="M145 90 Q148 70 140 55" stroke="#f97316" stroke-width="1" fill="none" opacity="0.6"/>
+            </svg>
+        </div>
+
+        <!-- Phoenix Wings -->
+        <div class="bg-card">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M100 110 Q75 90 40 100 Q30 85 50 70 Q35 60 55 55 Q40 40 65 42 Q55 25 80 30 Q85 15 100 20" stroke="#f97316" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M100 110 Q125 90 160 100 Q170 85 150 70 Q165 60 145 55 Q160 40 135 42 Q145 25 120 30 Q115 15 100 20" stroke="#f97316" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M100 20 Q95 50 85 70 Q90 85 100 90 Q110 85 115 70 Q105 50 100 20Z" fill="#f97316" opacity="0.25"/>
+                <ellipse cx="100" cy="130" rx="12" ry="18" stroke="#f97316" stroke-width="2" fill="#f97316" opacity="0.15"/>
+                <path d="M94 155 Q100 170 106 155" stroke="#f97316" stroke-width="2" fill="none"/>
+                <circle cx="100" cy="90" r="6" fill="#f97316"/>
+                <path d="M55 75 Q65 65 75 70" stroke="#f97316" stroke-width="1.2" fill="none" opacity="0.7"/>
+                <path d="M145 75 Q135 65 125 70" stroke="#f97316" stroke-width="1.2" fill="none" opacity="0.7"/>
+            </svg>
+        </div>
+
+        <!-- Tribal Band -->
+        <div class="bg-card">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="10" y="85" width="180" height="30" rx="4" fill="#f97316" opacity="0.08"/>
+                <path d="M10 90 L40 85 L55 100 L70 85 L85 100 L100 85 L115 100 L130 85 L145 100 L160 85 L190 90" stroke="#f97316" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+                <path d="M10 110 L40 115 L55 100 L70 115 L85 100 L100 115 L115 100 L130 115 L145 100 L160 115 L190 110" stroke="#f97316" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+                <line x1="10" y1="100" x2="190" y2="100" stroke="#f97316" stroke-width="0.8" stroke-dasharray="3 3" opacity="0.4"/>
+                <circle cx="40" cy="85" r="3" fill="#f97316"/>
+                <circle cx="70" cy="85" r="3" fill="#f97316"/>
+                <circle cx="100" cy="85" r="3" fill="#f97316"/>
+                <circle cx="130" cy="85" r="3" fill="#f97316"/>
+                <circle cx="160" cy="85" r="3" fill="#f97316"/>
+                <circle cx="40" cy="115" r="3" fill="#f97316"/>
+                <circle cx="70" cy="115" r="3" fill="#f97316"/>
+                <circle cx="100" cy="115" r="3" fill="#f97316"/>
+                <circle cx="130" cy="115" r="3" fill="#f97316"/>
+                <circle cx="160" cy="115" r="3" fill="#f97316"/>
+                <path d="M55 85 L55 65 L65 65 L65 85" stroke="#f97316" stroke-width="1.5" fill="none"/>
+                <path d="M55 115 L55 135 L65 135 L65 115" stroke="#f97316" stroke-width="1.5" fill="none"/>
+                <path d="M125 85 L125 65 L135 65 L135 85" stroke="#f97316" stroke-width="1.5" fill="none"/>
+                <path d="M125 115 L125 135 L135 135 L135 115" stroke="#f97316" stroke-width="1.5" fill="none"/>
+            </svg>
+        </div>
+
+        <!-- Lotus / Flower -->
+        <div class="bg-card">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M100 160 L100 100" stroke="#f97316" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M100 130 Q80 120 75 100 Q90 100 100 115" fill="#f97316" opacity="0.2" stroke="#f97316" stroke-width="1.5"/>
+                <path d="M100 130 Q120 120 125 100 Q110 100 100 115" fill="#f97316" opacity="0.2" stroke="#f97316" stroke-width="1.5"/>
+                <path d="M100 100 Q75 70 80 45 Q95 60 100 80" fill="#f97316" opacity="0.15" stroke="#f97316" stroke-width="1.5"/>
+                <path d="M100 100 Q125 70 120 45 Q105 60 100 80" fill="#f97316" opacity="0.15" stroke="#f97316" stroke-width="1.5"/>
+                <path d="M100 80 Q75 55 90 30 Q100 50 100 70" fill="#f97316" opacity="0.3" stroke="#f97316" stroke-width="1.5"/>
+                <path d="M100 80 Q125 55 110 30 Q100 50 100 70" fill="#f97316" opacity="0.3" stroke="#f97316" stroke-width="1.5"/>
+                <path d="M100 70 Q95 45 100 30 Q105 45 100 70Z" fill="#f97316" opacity="0.5"/>
+                <circle cx="100" cy="90" r="8" fill="#f97316" opacity="0.4"/>
+                <circle cx="100" cy="90" r="4" fill="#f97316"/>
+                <circle cx="100" cy="160" r="5" fill="#f97316" opacity="0.5"/>
+                <ellipse cx="100" cy="165" rx="20" ry="8" stroke="#f97316" stroke-width="1" fill="none" opacity="0.4"/>
+            </svg>
+        </div>
+
+        <!-- Dragon -->
+        <div class="bg-card">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M30 170 Q50 140 70 130 Q90 120 100 100 Q110 80 130 60 Q150 40 170 30" stroke="#f97316" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+                <path d="M170 30 L185 20 L180 35 L195 30 L182 42" stroke="#f97316" stroke-width="2" stroke-linejoin="round" fill="none"/>
+                <circle cx="175" cy="28" r="5" fill="#09090b" stroke="#f97316" stroke-width="2"/>
+                <circle cx="175" cy="27" r="2" fill="#f97316"/>
+                <path d="M165 32 L172 25" stroke="#f97316" stroke-width="1.5"/>
+                <path d="M168 36 L178 32" stroke="#f97316" stroke-width="1.5"/>
+                <path d="M120 70 Q110 50 125 40" stroke="#f97316" stroke-width="1.5" fill="none"/>
+                <path d="M100 100 Q85 85 95 72" stroke="#f97316" stroke-width="1.5" fill="none"/>
+                <path d="M70 130 Q55 118 62 105" stroke="#f97316" stroke-width="1.5" fill="none"/>
+                <path d="M30 170 Q22 155 32 148" stroke="#f97316" stroke-width="1.5" fill="none"/>
+                <circle cx="80" cy="140" r="3" fill="#f97316" opacity="0.5"/>
+                <circle cx="100" cy="110" r="3" fill="#f97316" opacity="0.5"/>
+                <circle cx="125" cy="80" r="3" fill="#f97316" opacity="0.5"/>
+                <circle cx="150" cy="52" r="3" fill="#f97316" opacity="0.5"/>
+            </svg>
+        </div>
+
+        <!-- Clock & Roses -->
+        <div class="bg-card">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="100" cy="90" r="70" stroke="#f97316" stroke-width="2"/>
+                <circle cx="100" cy="90" r="62" stroke="#f97316" stroke-width="0.8"/>
+                <circle cx="100" cy="90" r="6" fill="#f97316"/>
+                <line x1="100" y1="90" x2="100" y2="40" stroke="#f97316" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="100" y1="90" x2="130" y2="100" stroke="#f97316" stroke-width="2" stroke-linecap="round"/>
+                <text x="100" y="38" text-anchor="middle" fill="#f97316" font-size="10" font-weight="bold">XII</text>
+                <text x="100" y="148" text-anchor="middle" fill="#f97316" font-size="10">VI</text>
+                <text x="38" y="94" text-anchor="middle" fill="#f97316" font-size="10">IX</text>
+                <text x="162" y="94" text-anchor="middle" fill="#f97316" font-size="10">III</text>
+                <path d="M50 160 Q60 140 55 125 Q65 130 60 145 Q70 125 65 110 Q80 118 72 135 Q85 118 90 125 Q82 140 75 155 Q65 165 50 160Z" fill="#f97316" opacity="0.2" stroke="#f97316" stroke-width="1.5"/>
+                <ellipse cx="65" cy="120" rx="12" ry="10" stroke="#f97316" stroke-width="1.5" fill="none"/>
+            </svg>
+        </div>
+
+        <!-- Geometric Diamond -->
+        <div class="bg-card">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="100,15 185,80 100,185 15,80" stroke="#f97316" stroke-width="2" fill="none"/>
+                <polygon points="100,35 165,80 100,160 35,80" stroke="#f97316" stroke-width="1" fill="#f97316" opacity="0.05"/>
+                <line x1="100" y1="15" x2="100" y2="185" stroke="#f97316" stroke-width="0.8" opacity="0.5"/>
+                <line x1="15" y1="80" x2="185" y2="80" stroke="#f97316" stroke-width="0.8" opacity="0.5"/>
+                <polygon points="100,15 142,80 100,80" fill="#f97316" opacity="0.15"/>
+                <polygon points="100,15 58,80 100,80" fill="#f97316" opacity="0.08"/>
+                <polygon points="100,185 142,80 100,80" fill="#f97316" opacity="0.08"/>
+                <polygon points="100,185 58,80 100,80" fill="#f97316" opacity="0.15"/>
+                <circle cx="100" cy="80" r="8" fill="#f97316"/>
+                <circle cx="100" cy="15" r="5" fill="#f97316" opacity="0.6"/>
+                <circle cx="100" cy="185" r="5" fill="#f97316" opacity="0.6"/>
+                <circle cx="15" cy="80" r="5" fill="#f97316" opacity="0.6"/>
+                <circle cx="185" cy="80" r="5" fill="#f97316" opacity="0.6"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Dark overlay -->
+    <div class="overlay" aria-hidden="true"></div>
+
+    <!-- Page content -->
+    <div class="page">
+
+        <!-- Left branding -->
+        <section class="branding">
+            <div class="logo-wrap">
+                <div class="logo-box" aria-hidden="true">🖊</div>
+                <span class="logo-name">InkVault</span>
+            </div>
+
+            <h1>El estudio digital<br>de tu <span class="hl">arte en piel</span></h1>
+
+            <p>Organiza tus inspiraciones, guarda diseños con sus prompts y construye tu biblioteca personal de tatuajes.</p>
+
+            <ul class="feature-list" aria-label="Características">
+                <li class="feature-item">
+                    <div class="feature-icon" aria-hidden="true">🖼</div>
+                    Sube diseños con drag &amp; drop
+                </li>
+                <li class="feature-item">
+                    <div class="feature-icon" aria-hidden="true">✍</div>
+                    Guarda prompts y descripciones
+                </li>
+                <li class="feature-item">
+                    <div class="feature-icon" aria-hidden="true">🗂</div>
+                    Filtra por estilo de tatuaje
+                </li>
+                <li class="feature-item">
+                    <div class="feature-icon" aria-hidden="true">🔒</div>
+                    Todo privado en tu dispositivo
+                </li>
+            </ul>
+        </section>
+
+        <!-- Auth panel -->
+        <aside class="auth-panel" aria-label="Iniciar sesión o registrarse">
+            <div class="auth-box">
+
+                <!-- Tabs -->
+                <div class="tab-row" role="tablist" aria-label="Modo de acceso">
+                    <button class="tab active" role="tab" aria-selected="true"  id="tab-login"    aria-controls="form-login"    data-target="login">Iniciar sesión</button>
+                    <button class="tab"        role="tab" aria-selected="false" id="tab-register" aria-controls="form-register" data-target="register">Registrarse</button>
+                </div>
+
+                <!-- Login form -->
+                <div class="auth-form active" id="form-login" role="tabpanel" aria-labelledby="tab-login">
+                    <h1 class="auth-title">Bienvenido de nuevo</h1>
+                    <p class="auth-sub">Ingresa a tu colección de diseños</p>
+
+                    <div class="error-msg" id="login-error" role="alert"></div>
+
+                    <form id="loginForm" novalidate>
+                        <div class="form-group">
+                            <label for="login-email">Correo electrónico</label>
+                            <input type="email" id="login-email" name="email" placeholder="tu@correo.com" autocomplete="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-pass">Contraseña</label>
+                            <input type="password" id="login-pass" name="password" placeholder="••••••••" autocomplete="current-password" required>
+                        </div>
+                        <a href="#" class="forgot" tabindex="0">¿Olvidaste tu contraseña?</a>
+                        <button type="submit" class="btn-auth">Entrar a InkVault</button>
+                    </form>
+
+                    <div class="divider">o</div>
+                    <button class="btn-guest" id="guestBtn" type="button">Continuar como invitado</button>
+                </div>
+
+                <!-- Register form -->
+                <div class="auth-form" id="form-register" role="tabpanel" aria-labelledby="tab-register">
+                    <h1 class="auth-title">Crea tu cuenta</h1>
+                    <p class="auth-sub">Empieza a guardar tus diseños hoy</p>
+
+                    <div class="error-msg" id="reg-error" role="alert"></div>
+
+                    <form id="registerForm" novalidate>
+                        <div class="form-group">
+                            <label for="reg-name">Nombre</label>
+                            <input type="text" id="reg-name" name="name" placeholder="Tu nombre…" autocomplete="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-email">Correo electrónico</label>
+                            <input type="email" id="reg-email" name="email" placeholder="tu@correo.com" autocomplete="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-pass">Contraseña</label>
+                            <input type="password" id="reg-pass" name="password" placeholder="Mín. 6 caracteres" autocomplete="new-password" minlength="6" required>
+                        </div>
+                        <button type="submit" class="btn-auth">Crear cuenta</button>
+                    </form>
+                </div>
+
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // ── Tab switching ──────────────────────────────────────
+        document.querySelectorAll('.tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+                document.getElementById('form-' + btn.dataset.target).classList.add('active');
+            });
+        });
+
+        // ── Helpers ────────────────────────────────────────────
+        function showError(id, msg) {
+            const el = document.getElementById(id);
+            el.textContent = msg;
+            el.classList.add('show');
+        }
+        function clearError(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        function goToApp(user) {
+            try { localStorage.setItem('inkVaultUser', JSON.stringify(user)); } catch {}
+            window.location.href = 'tattoo-designer.html';
+        }
+
+        // ── Login ──────────────────────────────────────────────
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            clearError('login-error');
+            const email = document.getElementById('login-email').value.trim();
+            const pass  = document.getElementById('login-pass').value;
+
+            if (!email || !pass) {
+                showError('login-error', 'Completa todos los campos.');
+                return;
+            }
+
+            // Check stored users
+            let users = [];
+            try { users = JSON.parse(localStorage.getItem('inkVaultUsers') || '[]'); } catch {}
+            const found = users.find(u => u.email === email && u.password === pass);
+            if (!found) {
+                showError('login-error', 'Correo o contraseña incorrectos.');
+                document.getElementById('login-pass').focus();
+                return;
+            }
+            goToApp(found);
+        });
+
+        // ── Register ───────────────────────────────────────────
+        document.getElementById('registerForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            clearError('reg-error');
+            const name  = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const pass  = document.getElementById('reg-pass').value;
+
+            if (!name || !email || !pass) {
+                showError('reg-error', 'Completa todos los campos.'); return;
+            }
+            if (pass.length < 6) {
+                showError('reg-error', 'La contraseña debe tener al menos 6 caracteres.'); return;
+            }
+
+            let users = [];
+            try { users = JSON.parse(localStorage.getItem('inkVaultUsers') || '[]'); } catch {}
+            if (users.find(u => u.email === email)) {
+                showError('reg-error', 'Ese correo ya está registrado.'); return;
+            }
+
+            const user = { name, email, password: pass };
+            users.push(user);
+            try { localStorage.setItem('inkVaultUsers', JSON.stringify(users)); } catch {}
+            goToApp(user);
+        });
+
+        // ── Guest ──────────────────────────────────────────────
+        document.getElementById('guestBtn').addEventListener('click', () => {
+            goToApp({ name: 'Invitado', email: '', guest: true });
+        });
+
+        // ── If already logged in, skip ─────────────────────────
+        try {
+            const u = JSON.parse(localStorage.getItem('inkVaultUser') || 'null');
+            if (u) window.location.href = 'tattoo-designer.html';
+        } catch {}
+    </script>
+</body>
+</html>
