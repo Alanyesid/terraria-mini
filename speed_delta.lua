@@ -20,11 +20,11 @@
       - Al subirte, detecta en qué vehículo vas y lo muestra.
       - Recuerda la velocidad que elegiste para cada vehículo:
         la próxima vez que te subas al mismo, se pone sola.
-      - Al subirte aparecen dos pedales flotantes del script:
+      - Al subirte aparecen tres pedales grandes del script:
           ACELERAR (mantener) : empuja la moto hacia donde mira,
-                                con la aceleración del modelo elegido,
-                                hasta su velocidad máxima.
-          FRENAR   (mantener) : la frena rápido.
+                                con la aceleración del modelo, hasta su máxima.
+          FRENAR   (mantener) : la frena fuerte; si sigues pulsando, reversa.
+          TURBO    (mantener) : la lleva a la máxima al instante (insano).
         Si no tocas ninguno, la moto se maneja normal con los
         controles del juego. Los pedales se pueden mover.
       - "Ahora" muestra tu velocidad. Si no coincide con el
@@ -47,12 +47,7 @@
         ejecutes el script, todo vuelve como lo dejaste.
       - Se guarda en el archivo SpeedHub_config.json de Delta.
 
-    MIRA
-      - Dibuja una mira (crosshair) en el centro de la pantalla.
-      - Cambia color, tamaño, grosor, hueco y el punto del centro.
-      - Solo es visual; ayuda a apuntar tú mismo.
-
-    El panel tiene pestañas arriba: toca VEL, TP, AUTO, EXTRA o MIRA
+    El panel tiene pestañas arriba: toca VEL, TP, AUTO o EXTRA
     para ver solo ese módulo y que ocupe menos espacio.
     El encabezado muestra los FPS y el ping.
 ]]
@@ -121,24 +116,8 @@ local vistos         = setmetatable({}, { __mode = "k" })
 local antiVuelco     = false
 local saltoAlto      = false
 local saltoInfinito  = false
-local miraOn         = false
-local miraPunto      = false
-local miraTam        = 10
-local miraGros       = 2
-local miraHueco      = 4
-local miraColorIdx   = 1
 local pestana        = 3     -- pestaña mostrada al abrir (3 = AUTO)
 local sucio          = false -- hay cambios sin guardar
-
-local MIRA_COLORES = {
-    { "Verde",    Color3.fromRGB(0, 255, 100) },
-    { "Blanco",   Color3.fromRGB(255, 255, 255) },
-    { "Rojo",     Color3.fromRGB(255, 40, 40) },
-    { "Cian",     Color3.fromRGB(0, 220, 255) },
-    { "Amarillo", Color3.fromRGB(255, 230, 0) },
-    { "Rosa",     Color3.fromRGB(255, 60, 200) },
-    { "Morado",   Color3.fromRGB(170, 70, 255) },
-}
 
 local indicePreset   = math.clamp(PRESET_INICIAL, 1, #PRESETS)
 local nombreMeta     = PRESETS[indicePreset][1]
@@ -197,15 +176,6 @@ if config then
     saltoAlto     = config.saltoAlto == true
     saltoInfinito = config.saltoInfinito == true
     if type(config.pestana) == "number" then pestana = config.pestana end
-    local m = config.mira
-    if type(m) == "table" then
-        miraOn    = m.on == true
-        miraPunto = m.punto == true
-        if type(m.tam) == "number" then miraTam = math.clamp(math.floor(m.tam), 2, 60) end
-        if type(m.gros) == "number" then miraGros = math.clamp(math.floor(m.gros), 1, 10) end
-        if type(m.hueco) == "number" then miraHueco = math.clamp(math.floor(m.hueco), 0, 40) end
-        if type(m.color) == "number" then miraColorIdx = math.clamp(math.floor(m.color), 1, #MIRA_COLORES) end
-    end
     local puntos = type(config.puntos) == "table" and config.puntos[tostring(game.PlaceId)]
     if type(puntos) == "table" then
         origen = aVector(puntos.origen)
@@ -230,8 +200,6 @@ local guiParent = (gethui and gethui()) or game:GetService("CoreGui")
 pcall(function()
     local viejo = guiParent:FindFirstChild("SpeedHubGui")
     if viejo then viejo:Destroy() end
-    local viejaMira = guiParent:FindFirstChild("SpeedHubMira")
-    if viejaMira then viejaMira:Destroy() end
 end)
 
 local gui = Instance.new("ScreenGui")
@@ -572,23 +540,6 @@ btnSaltoAlto.TextSize = 11
 btnSaltoInf.TextSize = 11
 local lblMobs = crearLabel("Mobs: -", 106, tExtra, TENUE, 12)
 
--- [05] Mira
-local tMira = crearTarjeta("05", "MIRA", 178, "MIRA")
-local btnMira      = crearBoton("MIRA: OFF", 12, 30, 100, 32, tMira)
-local btnMiraColor = crearBoton("Color", 118, 30, 100, 32, tMira)
-local lblMiraTam   = crearLabel("Tamaño: 10", 70, tMira, TEXTO, 12)
-local btnTamMenos  = crearBoton("-", 150, 66, 30, 26, tMira)
-local btnTamMas    = crearBoton("+", 186, 66, 32, 26, tMira)
-local lblMiraGros  = crearLabel("Grosor: 2", 100, tMira, TEXTO, 12)
-local btnGrosMenos = crearBoton("-", 150, 96, 30, 26, tMira)
-local btnGrosMas   = crearBoton("+", 186, 96, 32, 26, tMira)
-local lblMiraHueco = crearLabel("Hueco: 4", 130, tMira, TEXTO, 12)
-local btnHuecoMenos= crearBoton("-", 150, 126, 30, 26, tMira)
-local btnHuecoMas  = crearBoton("+", 186, 126, 32, 26, tMira)
-local btnMiraPunto = crearBoton("Punto: OFF", 12, 126, 100, 26, tMira)
-btnMira.TextSize = 12
-btnMiraColor.TextSize = 12
-btnMiraPunto.TextSize = 11
 
 local function setEstado(texto)
     lblEstado.Text = "> " .. texto
@@ -606,11 +557,6 @@ local function actualizarUI()
     estiloToggle(btnAntiVuelco, antiVuelco, "ANTI-VUELCO: ON", "ANTI-VUELCO: OFF")
     estiloToggle(btnSaltoAlto, saltoAlto, "SALTO ALTO: ON", "SALTO ALTO: OFF")
     estiloToggle(btnSaltoInf, saltoInfinito, "SALTO INF: ON", "SALTO INF: OFF")
-    estiloToggle(btnMira, miraOn, "MIRA: ON", "MIRA: OFF")
-    estiloToggle(btnMiraPunto, miraPunto, "Punto: ON", "Punto: OFF")
-    lblMiraTam.Text = "Tamaño: " .. miraTam
-    lblMiraGros.Text = "Grosor: " .. miraGros
-    lblMiraHueco.Text = "Hueco: " .. miraHueco
     sucio = true
 end
 
@@ -823,6 +769,7 @@ local asientosOriginales = {}  -- asiento -> MaxSpeed original
 local tiempoVehUI = 0
 local acelerandoBoton = false
 local frenandoBoton = false
+local turboBoton = false
 
 local function restaurarAsientos()
     for asiento, maxOriginal in pairs(asientosOriginales) do
@@ -846,8 +793,8 @@ end
 
 -- Pedales flotantes del script (aparecen al subir a un vehículo)
 local pedales = Instance.new("Frame")
-pedales.Size = UDim2.new(0, 196, 0, 86)
-pedales.Position = UDim2.new(1, -216, 0.3, 0)
+pedales.Size = UDim2.new(0, 300, 0, 112)
+pedales.Position = UDim2.new(1, -320, 0.32, 0)
 pedales.BackgroundColor3 = FONDO
 pedales.BorderSizePixel = 0
 pedales.Active = true
@@ -869,10 +816,10 @@ tituloPedales.TextTruncate = Enum.TextTruncate.AtEnd
 tituloPedales.Text = "> pedales // 0 km/h"
 tituloPedales.Parent = pedales
 
-local function crearPedal(texto, x, colorTexto, colorFondo)
+local function crearPedal(texto, x, w, colorTexto, colorFondo)
     local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, 86, 0, 56)
-    b.Position = UDim2.new(0, x, 0, 23)
+    b.Size = UDim2.new(0, w, 0, 78)
+    b.Position = UDim2.new(0, x, 0, 26)
     b.BackgroundColor3 = colorFondo
     b.Font = FUENTE
     b.TextSize = 14
@@ -885,8 +832,9 @@ local function crearPedal(texto, x, colorTexto, colorFondo)
     return b
 end
 
-local pedalFreno = crearPedal("FRENAR", 8, OFF_TEXTO, OFF_FONDO)
-local pedalAcel  = crearPedal("ACELERAR", 102, NEON, ON_FONDO)
+local pedalFreno = crearPedal("FRENAR", 8, 92, OFF_TEXTO, OFF_FONDO)
+local pedalAcel  = crearPedal("ACELERAR", 104, 92, NEON, ON_FONDO)
+local pedalTurbo = crearPedal("TURBO", 200, 92, CIAN, Color3.fromRGB(0, 40, 55))
 
 -- Mantener pulsado: se activa al tocar y se apaga al soltar el mismo dedo
 local function botonMantener(boton, alCambiar)
@@ -916,6 +864,7 @@ end
 
 botonMantener(pedalAcel, function(v) acelerandoBoton = v end)
 botonMantener(pedalFreno, function(v) frenandoBoton = v end)
+botonMantener(pedalTurbo, function(v) turboBoton = v end)
 
 -- Elegir modelo (y recordarlo para el vehículo en el que vas)
 local function elegirMeta(nombre, kmh, acel)
@@ -969,7 +918,7 @@ btnVeh.MouseButton1Click:Connect(function()
     vehiculoActivo = not vehiculoActivo
     if not vehiculoActivo then
         restaurarAsientos()
-        acelerandoBoton, frenandoBoton = false, false
+        acelerandoBoton, frenandoBoton, turboBoton = false, false, false
     end
     setEstado(vehiculoActivo and "Vehículo rápido activado" or "Vehículo normal")
     actualizarUI()
@@ -990,7 +939,7 @@ end
 
 local function alBajar()
     vehiculoActual = nil
-    acelerandoBoton, frenandoBoton = false, false
+    acelerandoBoton, frenandoBoton, turboBoton = false, false, false
     lblManejando.Text = "Manejando: ninguno"
     lblVehVel.Text = "Ahora: 0 km/h | Meta: " .. metaKmh
 end
@@ -1041,12 +990,15 @@ table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
         asiento.MaxSpeed = math.max(asientosOriginales[asiento], meta)
     end
 
-    if frenandoBoton then
-        -- Frena: baja la velocidad hacia adelante hasta 0
-        if avance > 0 then
-            local nuevo = math.max(0, avance - (FRENO_KMH_S / KMH_POR_STUD) * dt)
-            raiz.AssemblyLinearVelocity = adelante * nuevo + resto
-        end
+    if turboBoton then
+        -- Turbo: a la máxima al instante
+        local lateral = Vector3.new(resto.X, 0, resto.Z) * 0.6
+        raiz.AssemblyLinearVelocity = adelante * meta + lateral + Vector3.new(0, resto.Y, 0)
+    elseif frenandoBoton then
+        -- Frena fuerte; si sigues pulsando, va en reversa
+        local minRev = -(meta * 0.4)
+        local nuevo = math.max(minRev, avance - (FRENO_KMH_S / KMH_POR_STUD) * dt)
+        raiz.AssemblyLinearVelocity = adelante * nuevo + resto
     elseif acelerandoBoton then
         -- Acelera hacia donde mira, con la aceleración del modelo, hasta su máxima.
         -- Se fija cada cuadro para que el motor del juego no la frene.
@@ -1140,90 +1092,6 @@ table.insert(conexiones, UserInputService.JumpRequest:Connect(function()
         hum:ChangeState(Enum.HumanoidStateType.Jumping)
     end
 end))
-
-----------------------------------------------------------------
--- MÓDULO: MIRA (crosshair en el centro)
-----------------------------------------------------------------
-local miraGui = Instance.new("ScreenGui")
-miraGui.Name = "SpeedHubMira"
-miraGui.ResetOnSpawn = false
-miraGui.IgnoreGuiInset = true
-miraGui.DisplayOrder = -1
-miraGui.Parent = guiParent
-
-local function nuevaLinea()
-    local l = Instance.new("Frame")
-    l.AnchorPoint = Vector2.new(0.5, 0.5)
-    l.BorderSizePixel = 0
-    l.Active = false
-    l.Visible = false
-    l.Parent = miraGui
-    return l
-end
-
-local mTop, mBot, mLeft, mRight, mDot =
-    nuevaLinea(), nuevaLinea(), nuevaLinea(), nuevaLinea(), nuevaLinea()
-
-local function actualizarMira()
-    local color = MIRA_COLORES[miraColorIdx][2]
-    for _, l in ipairs({ mTop, mBot, mLeft, mRight }) do
-        l.BackgroundColor3 = color
-        l.Visible = miraOn
-    end
-    mDot.BackgroundColor3 = color
-    mDot.Visible = miraOn and miraPunto
-
-    local medio = miraHueco + miraTam / 2
-    mTop.Size    = UDim2.new(0, miraGros, 0, miraTam)
-    mBot.Size    = UDim2.new(0, miraGros, 0, miraTam)
-    mLeft.Size   = UDim2.new(0, miraTam, 0, miraGros)
-    mRight.Size  = UDim2.new(0, miraTam, 0, miraGros)
-    mTop.Position   = UDim2.new(0.5, 0, 0.5, -medio)
-    mBot.Position   = UDim2.new(0.5, 0, 0.5, medio)
-    mLeft.Position  = UDim2.new(0.5, -medio, 0.5, 0)
-    mRight.Position = UDim2.new(0.5, medio, 0.5, 0)
-    local d = math.max(2, miraGros + 1)
-    mDot.Size = UDim2.new(0, d, 0, d)
-    mDot.Position = UDim2.new(0.5, 0, 0.5, 0)
-end
-
-btnMira.MouseButton1Click:Connect(function()
-    miraOn = not miraOn
-    actualizarMira()
-    setEstado(miraOn and "Mira activada" or "Mira apagada")
-    actualizarUI()
-end)
-
-btnMiraColor.MouseButton1Click:Connect(function()
-    miraColorIdx = miraColorIdx % #MIRA_COLORES + 1
-    actualizarMira()
-    setEstado("Color: " .. MIRA_COLORES[miraColorIdx][1])
-end)
-
-btnMiraPunto.MouseButton1Click:Connect(function()
-    miraPunto = not miraPunto
-    actualizarMira()
-    actualizarUI()
-end)
-
-btnTamMas.MouseButton1Click:Connect(function()
-    miraTam = math.min(60, miraTam + 2); actualizarMira(); actualizarUI()
-end)
-btnTamMenos.MouseButton1Click:Connect(function()
-    miraTam = math.max(2, miraTam - 2); actualizarMira(); actualizarUI()
-end)
-btnGrosMas.MouseButton1Click:Connect(function()
-    miraGros = math.min(10, miraGros + 1); actualizarMira(); actualizarUI()
-end)
-btnGrosMenos.MouseButton1Click:Connect(function()
-    miraGros = math.max(1, miraGros - 1); actualizarMira(); actualizarUI()
-end)
-btnHuecoMas.MouseButton1Click:Connect(function()
-    miraHueco = math.min(40, miraHueco + 2); actualizarMira(); actualizarUI()
-end)
-btnHuecoMenos.MouseButton1Click:Connect(function()
-    miraHueco = math.max(0, miraHueco - 2); actualizarMira(); actualizarUI()
-end)
 
 ----------------------------------------------------------------
 -- MÓDULO: INVENCIBLE
@@ -1454,8 +1322,6 @@ local function guardar()
     datos.saltoAlto     = saltoAlto
     datos.saltoInfinito = saltoInfinito
     datos.pestana       = pestana
-    datos.mira = { on = miraOn, punto = miraPunto, tam = miraTam,
-                   gros = miraGros, hueco = miraHueco, color = miraColorIdx }
     local pos = frame.Position
     datos.panel = { pos.X.Scale, pos.X.Offset, pos.Y.Scale, pos.Y.Offset }
     if type(datos.puntos) ~= "table" then datos.puntos = {} end
@@ -1492,7 +1358,7 @@ local function cerrar()
     antiMobs = false
     for _, c in ipairs(conexiones) do c:Disconnect() end
     conexiones = {}
-    acelerandoBoton, frenandoBoton = false, false
+    acelerandoBoton, frenandoBoton, turboBoton = false, false, false
     restaurarAsientos()
     restaurarMobs()
     aplicarInvencible()
@@ -1501,7 +1367,6 @@ local function cerrar()
     local hum = getHumanoid()
     if hum then hum.WalkSpeed = VELOCIDAD_NORMAL end
     if gui then gui:Destroy() end
-    if miraGui then miraGui:Destroy() end
     _G.SpeedHubCerrar = nil
 end
 
@@ -1519,7 +1384,6 @@ txtVel.Text = tostring(VELOCIDAD_ELEGIDA)
 aplicarVelocidad()
 aplicarSalto()
 mostrarModulo(pestana)
-actualizarMira()
 if config then
     setEstado("Configuración cargada")
 elseif activo then
