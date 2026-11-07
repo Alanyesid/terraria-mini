@@ -20,9 +20,13 @@
       - Al subirte, detecta en qué vehículo vas y lo muestra.
       - Recuerda la velocidad que elegiste para cada vehículo:
         la próxima vez que te subas al mismo, se pone sola.
-      - Funciona con los pedales del juego: cuando la moto va
-        hacia adelante y no estás frenando, la empuja hasta la
-        velocidad elegida. Para bajar la velocidad, frena.
+      - Al subirte aparecen dos pedales flotantes del script:
+          ACELERAR (mantener) : empuja la moto hacia donde mira,
+                                con la aceleración del modelo elegido,
+                                hasta su velocidad máxima.
+          FRENAR   (mantener) : la frena rápido.
+        Si no tocas ninguno, la moto se maneja normal con los
+        controles del juego. Los pedales se pueden mover.
       - "Ahora" muestra tu velocidad. Si no coincide con el
         velocímetro del juego, ajusta KMH_POR_STUD.
 
@@ -45,23 +49,25 @@ local DISTANCIA_ALERTA   = 30    -- a cuántos studs avisa que hay un mob cerca
 -- Vehículos
 local KMH_POR_STUD        = 0.91 -- 1 stud/s = 0.91 km/h (ajústalo si no coincide con el juego)
 local LIMITE_VEHICULO_KMH = 1000 -- máximo que se puede escribir
-local ACELERACION_VEH     = 1.5  -- qué tan rápido llega a la velocidad (más = más brusco)
-local FRENO_UMBRAL        = 30   -- si la moto pierde más de esto por segundo, cuenta como freno
+local FRENO_KMH_S         = 150  -- cuántos km/h pierde por segundo al mantener FRENAR
+local INVERTIR_DIRECCION  = false -- true si al acelerar la moto va hacia atrás
 local VEHICULO_AL_INICIAR = true -- true: el módulo de vehículo arranca en ON
-local PRESET_INICIAL      = 3    -- cuál modelo está elegido al iniciar (número de la lista)
+local PRESET_INICIAL      = 5    -- cuál modelo está elegido al iniciar (número de la lista)
 
--- Modelos para elegir: { nombre, km/h }
+-- Modelos para elegir: { nombre, km/h máximos, aceleración en km/h por segundo }
 local PRESETS = {
-    { "Moto - Scooter 125",        90  },
-    { "Moto - Honda CB500",        180 },
-    { "Moto - Kawasaki Ninja 400", 190 },
-    { "Moto - Yamaha R6",          260 },
-    { "Moto - Kawasaki ZX-10R",    300 },
-    { "Moto - Kawasaki H2R",       400 },
-    { "Carro - Sedán",             180 },
-    { "Carro - Deportivo",         280 },
-    { "Carro - NASCAR",            320 },
-    { "Carro - Fórmula 1",         360 },
+    { "Moto - Honda CB500",          180,  35 },
+    { "Moto - Kawasaki Ninja 400",   190,  40 },
+    { "Moto - Yamaha R6",            260,  60 },
+    { "Moto - Suzuki Hayabusa",      300,  75 },
+    { "Moto - Kawasaki ZX-10R",      300,  80 },
+    { "Moto - BMW S1000RR",          305,  85 },
+    { "Moto - Ducati Panigale V4 R", 320,  95 },
+    { "Moto - Kawasaki H2R",         400, 120 },
+    { "Carro - NASCAR",              320,  70 },
+    { "Carro - Fórmula 1",           360, 110 },
+    { "Carro - Bugatti Chiron",      440, 100 },
+    { "Modo cohete",                 600, 200 },
 }
 
 ----------------------------------------------------------------
@@ -91,8 +97,9 @@ local vistos         = setmetatable({}, { __mode = "k" })
 local indicePreset   = math.clamp(PRESET_INICIAL, 1, #PRESETS)
 local nombreMeta     = PRESETS[indicePreset][1]
 local metaKmh        = PRESETS[indicePreset][2]
+local acelKmh        = PRESETS[indicePreset][3]
 local vehiculoActual = nil   -- modelo del vehículo en el que vas
-local memoria        = {}    -- nombre del vehículo -> { nombre, kmh }
+local memoria        = {}    -- nombre del vehículo -> { nombre, kmh, aceleración }
 
 local function getHumanoid()
     local char = player.Character
@@ -427,7 +434,7 @@ local function actualizarUI()
     lblVel.Text = "WALKSPEED: " .. (activo and VELOCIDAD_ELEGIDA or VELOCIDAD_NORMAL)
     estiloToggle(btnToggle, activo, "ON", "OFF")
     estiloToggle(btnAuto, autoRegreso, "AUTO: ON", "AUTO: OFF")
-    lblPreset.Text = nombreMeta .. "\n" .. metaKmh .. " km/h"
+    lblPreset.Text = nombreMeta .. "\n" .. metaKmh .. " km/h  +" .. acelKmh .. "/s"
     estiloToggle(btnVeh, vehiculoActivo, "ON", "OFF")
     estiloToggle(btnInvencible, invencible, "INVENCIBLE: ON", "INVENCIBLE: OFF")
     estiloToggle(btnAntiMobs, antiMobs, "ANTI-MOBS: ON", "ANTI-MOBS: OFF")
@@ -596,9 +603,11 @@ end
 ----------------------------------------------------------------
 -- MÓDULO: VEHÍCULO (motos y carros)
 ----------------------------------------------------------------
+local UserInputService = game:GetService("UserInputService")
 local asientosOriginales = {}  -- asiento -> MaxSpeed original
-local rapidezAnterior = nil
 local tiempoVehUI = 0
+local acelerandoBoton = false
+local frenandoBoton = false
 
 local function restaurarAsientos()
     for asiento, maxOriginal in pairs(asientosOriginales) do
@@ -620,12 +629,86 @@ local function obtenerVehiculo(asiento)
     return modelo or asiento
 end
 
--- Elegir velocidad (y recordarla para el vehículo en el que vas)
-local function elegirMeta(nombre, kmh)
+-- Pedales flotantes del script (aparecen al subir a un vehículo)
+local pedales = Instance.new("Frame")
+pedales.Size = UDim2.new(0, 196, 0, 86)
+pedales.Position = UDim2.new(1, -216, 0.3, 0)
+pedales.BackgroundColor3 = FONDO
+pedales.BorderSizePixel = 0
+pedales.Active = true
+pedales.Draggable = true
+pedales.Visible = false
+pedales.Parent = gui
+esquina(pedales, 10)
+borde(pedales, NEON, 1.5)
+
+local tituloPedales = Instance.new("TextLabel")
+tituloPedales.Size = UDim2.new(1, -16, 0, 18)
+tituloPedales.Position = UDim2.new(0, 8, 0, 3)
+tituloPedales.BackgroundTransparency = 1
+tituloPedales.Font = FUENTE
+tituloPedales.TextSize = 11
+tituloPedales.TextColor3 = TENUE
+tituloPedales.TextXAlignment = Enum.TextXAlignment.Left
+tituloPedales.TextTruncate = Enum.TextTruncate.AtEnd
+tituloPedales.Text = "> pedales // 0 km/h"
+tituloPedales.Parent = pedales
+
+local function crearPedal(texto, x, colorTexto, colorFondo)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0, 86, 0, 56)
+    b.Position = UDim2.new(0, x, 0, 23)
+    b.BackgroundColor3 = colorFondo
+    b.Font = FUENTE
+    b.TextSize = 14
+    b.TextColor3 = colorTexto
+    b.Text = texto
+    b.AutoButtonColor = false
+    b.Parent = pedales
+    esquina(b, 8)
+    borde(b, colorTexto, 1.5)
+    return b
+end
+
+local pedalFreno = crearPedal("FRENAR", 8, OFF_TEXTO, OFF_FONDO)
+local pedalAcel  = crearPedal("ACELERAR", 102, NEON, ON_FONDO)
+
+-- Mantener pulsado: se activa al tocar y se apaga al soltar el mismo dedo
+local function botonMantener(boton, alCambiar)
+    local entrada = nil
+    local fondoNormal = boton.BackgroundColor3
+    local function soltar()
+        entrada = nil
+        boton.BackgroundColor3 = fondoNormal
+        alCambiar(false)
+    end
+    boton.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.Touch
+            or inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            entrada = inp
+            boton.BackgroundColor3 = fondoNormal:Lerp(Color3.new(1, 1, 1), 0.25)
+            alCambiar(true)
+        end
+    end)
+    table.insert(conexiones, UserInputService.InputEnded:Connect(function(inp)
+        if entrada and (inp == entrada
+            or (inp.UserInputType == Enum.UserInputType.MouseButton1
+                and entrada.UserInputType == Enum.UserInputType.MouseButton1)) then
+            soltar()
+        end
+    end))
+end
+
+botonMantener(pedalAcel, function(v) acelerandoBoton = v end)
+botonMantener(pedalFreno, function(v) frenandoBoton = v end)
+
+-- Elegir modelo (y recordarlo para el vehículo en el que vas)
+local function elegirMeta(nombre, kmh, acel)
     nombreMeta = nombre
     metaKmh = kmh
+    acelKmh = acel
     if vehiculoActual then
-        memoria[vehiculoActual.Name] = { nombre, kmh }
+        memoria[vehiculoActual.Name] = { nombre, kmh, acel }
         setEstado(nombre .. " guardado para " .. vehiculoActual.Name)
     else
         setEstado("Elegido: " .. nombre .. " (" .. kmh .. " km/h)")
@@ -633,16 +716,21 @@ local function elegirMeta(nombre, kmh)
     actualizarUI()
 end
 
+local function elegirPreset()
+    local p = PRESETS[indicePreset]
+    elegirMeta(p[1], p[2], p[3])
+end
+
 btnPrev.MouseButton1Click:Connect(function()
     indicePreset = indicePreset - 1
     if indicePreset < 1 then indicePreset = #PRESETS end
-    elegirMeta(PRESETS[indicePreset][1], PRESETS[indicePreset][2])
+    elegirPreset()
 end)
 
 btnNext.MouseButton1Click:Connect(function()
     indicePreset = indicePreset + 1
     if indicePreset > #PRESETS then indicePreset = 1 end
-    elegirMeta(PRESETS[indicePreset][1], PRESETS[indicePreset][2])
+    elegirPreset()
 end)
 
 local function leerVehiculo()
@@ -653,7 +741,8 @@ local function leerVehiculo()
     end
     n = math.clamp(math.floor(n), 10, LIMITE_VEHICULO_KMH)
     txtVeh.Text = tostring(n)
-    elegirMeta("Personalizada", n)
+    -- Aceleración proporcional: llega a la máxima en unos 3 segundos
+    elegirMeta("Personalizada", n, math.max(20, math.floor(n / 3)))
 end
 
 btnVehOK.MouseButton1Click:Connect(leerVehiculo)
@@ -663,18 +752,20 @@ end)
 
 btnVeh.MouseButton1Click:Connect(function()
     vehiculoActivo = not vehiculoActivo
-    if not vehiculoActivo then restaurarAsientos() end
+    if not vehiculoActivo then
+        restaurarAsientos()
+        acelerandoBoton, frenandoBoton = false, false
+    end
     setEstado(vehiculoActivo and "Vehículo rápido activado" or "Vehículo normal")
     actualizarUI()
 end)
 
 local function alSubir(vehiculo)
     vehiculoActual = vehiculo
-    rapidezAnterior = nil
     lblManejando.Text = "Manejando: " .. vehiculo.Name
     local guardado = memoria[vehiculo.Name]
     if guardado then
-        nombreMeta, metaKmh = guardado[1], guardado[2]
+        nombreMeta, metaKmh, acelKmh = guardado[1], guardado[2], guardado[3]
         setEstado("Usando " .. nombreMeta .. " en " .. vehiculo.Name)
     else
         setEstado("Subiste a " .. vehiculo.Name)
@@ -684,7 +775,7 @@ end
 
 local function alBajar()
     vehiculoActual = nil
-    rapidezAnterior = nil
+    acelerandoBoton, frenandoBoton = false, false
     lblManejando.Text = "Manejando: ninguno"
     lblVehVel.Text = "Ahora: 0 km/h | Meta: " .. metaKmh
 end
@@ -694,6 +785,7 @@ table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
     local asiento = hum and hum.SeatPart
 
     -- Detecta al subir y al bajar
+    pedales.Visible = vehiculoActivo and asiento ~= nil
     if not asiento then
         if vehiculoActual then alBajar() end
         return
@@ -703,22 +795,30 @@ table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
 
     local raiz = asiento.AssemblyRootPart or asiento
     local vel = raiz.AssemblyLinearVelocity
-    local plano = Vector3.new(vel.X, 0, vel.Z)
-    local rapidez = plano.Magnitude
-    local meta = metaKmh / KMH_POR_STUD
+
+    -- Hacia dónde mira el vehículo (solo horizontal)
+    local mira = asiento.CFrame.LookVector
+    if INVERTIR_DIRECCION then mira = -mira end
+    local adelante = Vector3.new(mira.X, 0, mira.Z)
+    if adelante.Magnitude < 0.01 then return end
+    adelante = adelante.Unit
+
+    local avance = vel:Dot(adelante)               -- velocidad hacia adelante
+    local resto  = vel - adelante * avance         -- lateral + caída
+    local rapidez = Vector3.new(vel.X, 0, vel.Z).Magnitude
 
     -- Muestra la velocidad
     tiempoVehUI = tiempoVehUI + dt
     if tiempoVehUI >= 0.2 then
         tiempoVehUI = 0
-        lblVehVel.Text = "Ahora: " .. math.floor(rapidez * KMH_POR_STUD) .. " km/h | Meta: " .. metaKmh
+        local kmh = math.floor(rapidez * KMH_POR_STUD)
+        lblVehVel.Text = "Ahora: " .. kmh .. " km/h | Meta: " .. metaKmh
+        tituloPedales.Text = "> " .. kmh .. "/" .. metaKmh .. " km/h"
     end
 
-    if not vehiculoActivo then
-        rapidezAnterior = rapidez
-        return
-    end
+    if not vehiculoActivo then return end
 
+    local meta = metaKmh / KMH_POR_STUD
     if asiento:IsA("VehicleSeat") then
         if asientosOriginales[asiento] == nil then
             asientosOriginales[asiento] = asiento.MaxSpeed
@@ -726,30 +826,22 @@ table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
         asiento.MaxSpeed = math.max(asientosOriginales[asiento], meta)
     end
 
-    -- ¿Está acelerando? Sirve con el acelerador de Roblox y con los pedales del juego
-    local acelerando
-    local acelerador = asiento:IsA("VehicleSeat") and asiento.ThrottleFloat or 0
-    if acelerador > 0.1 then
-        acelerando = true
-    elseif acelerador < -0.1 then
-        acelerando = false  -- frenando o en reversa
-    else
-        local cambio = rapidezAnterior and (rapidez - rapidezAnterior) / math.max(dt, 1e-3) or 0
-        acelerando = rapidez > 3 and cambio > -FRENO_UMBRAL
-    end
-
-    -- No empuja en reversa
-    if rapidez > 0.5 and plano.Unit:Dot(asiento.CFrame.LookVector) < 0 then
-        acelerando = false
-    end
-
-    if acelerando and rapidez < meta and rapidez > 0.5 then
-        local direccion = plano.Unit
-        local nueva = rapidez + (meta - rapidez) * math.min(1, dt * ACELERACION_VEH)
-        raiz.AssemblyLinearVelocity = vel + direccion * (nueva - rapidez)
-        rapidezAnterior = nueva
-    else
-        rapidezAnterior = rapidez
+    if frenandoBoton then
+        -- Frena: baja la velocidad hacia adelante hasta 0
+        if avance > 0 then
+            local nuevo = math.max(0, avance - (FRENO_KMH_S / KMH_POR_STUD) * dt)
+            raiz.AssemblyLinearVelocity = adelante * nuevo + resto
+        end
+    elseif acelerandoBoton then
+        -- Acelera hacia donde mira, con la aceleración del modelo, hasta su máxima.
+        -- Se fija cada cuadro para que el motor del juego no la frene.
+        local acel = (acelKmh / KMH_POR_STUD) * dt
+        local nuevo = math.min(meta, math.max(avance, 0) + acel)
+        if nuevo > avance then
+            -- Reduce el derrape lateral para que siga la dirección del manubrio
+            local lateral = Vector3.new(resto.X, 0, resto.Z) * 0.85
+            raiz.AssemblyLinearVelocity = adelante * nuevo + lateral + Vector3.new(0, resto.Y, 0)
+        end
     end
 end))
 
@@ -921,6 +1013,7 @@ local function cerrar()
     antiMobs = false
     for _, c in ipairs(conexiones) do c:Disconnect() end
     conexiones = {}
+    acelerandoBoton, frenandoBoton = false, false
     restaurarAsientos()
     restaurarMobs()
     aplicarInvencible()
