@@ -66,6 +66,7 @@ local LIMITE_VELOCIDAD   = 1000  -- máximo que se puede escribir
 local ACTIVAR_AL_INICIAR = true  -- true: la velocidad elegida se aplica al ejecutar
 local ALTURA_TP          = 3     -- cuántos studs por encima del punto apareces
 local DISTANCIA_ALERTA   = 30    -- a cuántos studs avisa que hay un mob cerca
+local REPELER_DISTANCIA  = 28    -- distancia a la que mantiene lejos a los enemigos
 local SALTO_ALTO         = 120   -- fuerza del salto alto (normal: 50)
 local FUERZA_ANTIVUELCO  = 8     -- qué tan rápido endereza la moto (más = más firme)
 local ARCHIVO_CONFIG     = "SpeedHub_config.json"
@@ -1271,6 +1272,7 @@ end))
 ----------------------------------------------------------------
 local mobs = {}              -- modelo -> true
 local partesOriginales = {}  -- parte -> { CanTouch, CanCollide }
+local humsOriginales = {}    -- humanoide -> WalkSpeed original
 
 local function esMob(modelo)
     if not modelo or not modelo:IsA("Model") then return false end
@@ -1291,6 +1293,10 @@ local function neutralizarMob(modelo)
     for _, d in ipairs(modelo:GetDescendants()) do
         neutralizarParte(d)
     end
+    local h = modelo:FindFirstChildOfClass("Humanoid")
+    if h and humsOriginales[h] == nil then
+        humsOriginales[h] = h.WalkSpeed
+    end
 end
 
 local function buscarMobs()
@@ -1310,6 +1316,10 @@ local function restaurarMobs()
             end)
         end
     end
+    for h, ws in pairs(humsOriginales) do
+        if h and h.Parent then pcall(function() h.WalkSpeed = ws end) end
+    end
+    humsOriginales = {}
     partesOriginales = {}
     mobs = {}
     lblMobs.Text = "Mobs: -"
@@ -1343,6 +1353,37 @@ table.insert(conexiones, workspace.DescendantAdded:Connect(function(obj)
     end
 end))
 
+-- Cada cuadro: mantiene a los enemigos lejos y quietos (solo NPC, no jugadores)
+table.insert(conexiones, RunService.Heartbeat:Connect(function()
+    if not antiMobs then return end
+    local hrp = getHRP()
+    if not hrp then return end
+    local miPos = hrp.Position
+    for modelo in pairs(mobs) do
+        if modelo.Parent then
+            local h = modelo:FindFirstChildOfClass("Humanoid")
+            if h then
+                h.WalkSpeed = 0            -- que no te persiga
+                pcall(function() h.Jump = false end)
+            end
+            local raiz = modelo:FindFirstChild("HumanoidRootPart")
+                or (h and h.RootPart) or modelo.PrimaryPart
+            if raiz then
+                local delta = raiz.Position - miPos
+                local plano = Vector3.new(delta.X, 0, delta.Z)
+                local dist = plano.Magnitude
+                if dist < REPELER_DISTANCIA then
+                    local dir = dist > 0.1 and plano.Unit or Vector3.new(0, 0, 1)
+                    local destino = miPos + dir * REPELER_DISTANCIA
+                        + Vector3.new(0, delta.Y, 0)
+                    raiz.AssemblyLinearVelocity = Vector3.zero
+                    raiz.CFrame = CFrame.new(destino, destino + dir)
+                end
+            end
+        end
+    end
+end))
+
 -- Cada medio segundo: limpia mobs que ya no existen y avisa del más cercano
 local tiempoMobs = 0
 table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
@@ -1366,6 +1407,9 @@ table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
     end
     for parte in pairs(partesOriginales) do
         if not parte.Parent then partesOriginales[parte] = nil end
+    end
+    for h in pairs(humsOriginales) do
+        if not h.Parent then humsOriginales[h] = nil end
     end
 
     if cantidad == 0 then
