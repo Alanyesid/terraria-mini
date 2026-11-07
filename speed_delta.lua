@@ -47,6 +47,13 @@
         ejecutes el script, todo vuelve como lo dejaste.
       - Se guarda en el archivo SpeedHub_config.json de Delta.
 
+    MIRA
+      - Dibuja una mira (crosshair) en el centro de la pantalla.
+      - Cambia color, tamaño, grosor, hueco y el punto del centro.
+      - Solo es visual; ayuda a apuntar tú mismo.
+
+    El panel tiene pestañas arriba: toca VEL, TP, AUTO, EXTRA o MIRA
+    para ver solo ese módulo y que ocupe menos espacio.
     El encabezado muestra los FPS y el ping.
 ]]
 
@@ -113,7 +120,24 @@ local vistos         = setmetatable({}, { __mode = "k" })
 local antiVuelco     = false
 local saltoAlto      = false
 local saltoInfinito  = false
+local miraOn         = false
+local miraPunto      = false
+local miraTam        = 10
+local miraGros       = 2
+local miraHueco      = 4
+local miraColorIdx   = 1
+local pestana        = 3     -- pestaña mostrada al abrir (3 = AUTO)
 local sucio          = false -- hay cambios sin guardar
+
+local MIRA_COLORES = {
+    { "Verde",    Color3.fromRGB(0, 255, 100) },
+    { "Blanco",   Color3.fromRGB(255, 255, 255) },
+    { "Rojo",     Color3.fromRGB(255, 40, 40) },
+    { "Cian",     Color3.fromRGB(0, 220, 255) },
+    { "Amarillo", Color3.fromRGB(255, 230, 0) },
+    { "Rosa",     Color3.fromRGB(255, 60, 200) },
+    { "Morado",   Color3.fromRGB(170, 70, 255) },
+}
 
 local indicePreset   = math.clamp(PRESET_INICIAL, 1, #PRESETS)
 local nombreMeta     = PRESETS[indicePreset][1]
@@ -171,6 +195,16 @@ if config then
     antiVuelco    = config.antiVuelco == true
     saltoAlto     = config.saltoAlto == true
     saltoInfinito = config.saltoInfinito == true
+    if type(config.pestana) == "number" then pestana = config.pestana end
+    local m = config.mira
+    if type(m) == "table" then
+        miraOn    = m.on == true
+        miraPunto = m.punto == true
+        if type(m.tam) == "number" then miraTam = math.clamp(math.floor(m.tam), 2, 60) end
+        if type(m.gros) == "number" then miraGros = math.clamp(math.floor(m.gros), 1, 10) end
+        if type(m.hueco) == "number" then miraHueco = math.clamp(math.floor(m.hueco), 0, 40) end
+        if type(m.color) == "number" then miraColorIdx = math.clamp(math.floor(m.color), 1, #MIRA_COLORES) end
+    end
     local puntos = type(config.puntos) == "table" and config.puntos[tostring(game.PlaceId)]
     if type(puntos) == "table" then
         origen = aVector(puntos.origen)
@@ -195,6 +229,8 @@ local guiParent = (gethui and gethui()) or game:GetService("CoreGui")
 pcall(function()
     local viejo = guiParent:FindFirstChild("SpeedHubGui")
     if viejo then viejo:Destroy() end
+    local viejaMira = guiParent:FindFirstChild("SpeedHubMira")
+    if viejaMira then viejaMira:Destroy() end
 end)
 
 local gui = Instance.new("ScreenGui")
@@ -218,8 +254,9 @@ local OFF_TEXTO = Color3.fromRGB(255, 85, 100)
 local FUENTE    = Enum.Font.Code
 
 local ANCHO_PANEL  = 250
-local ALTO_PANEL   = 420
+local ALTO_PANEL   = 330
 local ALTO_HEADER  = 46
+local ALTO_TABS    = 34
 local ALTO_ESTADO  = 26
 
 local function esquina(obj, r)
@@ -335,10 +372,17 @@ task.spawn(function()
     end
 end)
 
+-- Barra de pestañas (debajo del encabezado)
+local tabsFrame = Instance.new("Frame")
+tabsFrame.Size = UDim2.new(1, 0, 0, ALTO_TABS)
+tabsFrame.Position = UDim2.new(0, 0, 0, ALTO_HEADER)
+tabsFrame.BackgroundTransparency = 1
+tabsFrame.Parent = frame
+
 -- Contenido con scroll
 local contenido = Instance.new("ScrollingFrame")
-contenido.Size = UDim2.new(1, 0, 1, -(ALTO_HEADER + ALTO_ESTADO))
-contenido.Position = UDim2.new(0, 0, 0, ALTO_HEADER)
+contenido.Size = UDim2.new(1, 0, 1, -(ALTO_HEADER + ALTO_TABS + ALTO_ESTADO))
+contenido.Position = UDim2.new(0, 0, 0, ALTO_HEADER + ALTO_TABS)
 contenido.BackgroundTransparency = 1
 contenido.BorderSizePixel = 0
 contenido.ScrollBarThickness = 3
@@ -381,8 +425,9 @@ lblEstado.Text = "> listo"
 lblEstado.Parent = barraEstado
 
 -- Piezas
+local tarjetas = {}  -- { tab = "VEL", card = Frame }
 local ordenTarjeta = 0
-local function crearTarjeta(numero, nombre, alto)
+local function crearTarjeta(numero, nombre, alto, tab)
     ordenTarjeta = ordenTarjeta + 1
     local t = Instance.new("Frame")
     t.Size = UDim2.new(1, 0, 0, alto)
@@ -410,6 +455,7 @@ local function crearTarjeta(numero, nombre, alto)
     cab.TextXAlignment = Enum.TextXAlignment.Left
     cab.Text = "[" .. numero .. "] " .. nombre
     cab.Parent = t
+    table.insert(tarjetas, { tab = tab, card = t })
     return t
 end
 
@@ -472,14 +518,14 @@ local function estiloToggle(b, encendido, textoOn, textoOff)
 end
 
 -- [01] Velocidad
-local tVel = crearTarjeta("01", "VELOCIDAD", 96)
+local tVel = crearTarjeta("01", "VELOCIDAD", 96, "VEL")
 local lblVel     = crearLabel("WALKSPEED: 16", 28, tVel)
 local btnToggle  = crearBoton("OFF", 12, 54, 64, 32, tVel)
 local txtVel     = crearCaja(tostring(VELOCIDAD_ELEGIDA), 82, 54, 86, 32, "ej: 200", tVel)
 local btnAplicar = crearBoton("OK", 174, 54, 44, 32, tVel)
 
 -- [02] Teletransporte
-local tTp = crearTarjeta("02", "TELETRANSPORTE", 146)
+local tTp = crearTarjeta("02", "TELETRANSPORTE", 146, "TP")
 local btnGuardarOrigen = crearBoton("Guardar origen", 12, 30, 100, 32, tTp)
 local btnVolverOrigen  = crearBoton("Volver origen", 118, 30, 100, 32, tTp)
 local btnGuardarPunto  = crearBoton("Guardar punto", 12, 68, 100, 32, tTp)
@@ -488,7 +534,7 @@ local btnIrMedio       = crearBoton("Ir al medio",   12, 106, 100, 32, tTp)
 local btnAuto          = crearBoton("AUTO: OFF",     118, 106, 100, 32, tTp)
 
 -- [03] Vehículo
-local tVeh = crearTarjeta("03", "VEHÍCULO // motos y carros", 194)
+local tVeh = crearTarjeta("03", "VEHÍCULO // motos y carros", 194, "AUTO")
 local lblManejando = crearLabel("Manejando: ninguno", 28, tVeh, TENUE, 12)
 local lblVehVel    = crearLabel("Ahora: 0 km/h | Meta: " .. metaKmh, 46, tVeh, TEXTO, 13)
 local btnPrev      = crearBoton("<", 12, 70, 30, 38, tVeh)
@@ -514,7 +560,7 @@ btnNext.TextSize = 16
 local btnAntiVuelco = crearBoton("ANTI-VUELCO: OFF", 12, 154, 206, 30, tVeh)
 
 -- [04] Extra
-local tExtra = crearTarjeta("04", "EXTRA", 130)
+local tExtra = crearTarjeta("04", "EXTRA", 130, "EXTRA")
 local btnInvencible = crearBoton("INVENCIBLE: OFF", 12, 30, 100, 32, tExtra)
 local btnAntiMobs   = crearBoton("ANTI-MOBS: OFF", 118, 30, 100, 32, tExtra)
 btnInvencible.TextSize = 11
@@ -524,6 +570,24 @@ local btnSaltoInf  = crearBoton("SALTO INF: OFF", 118, 68, 100, 32, tExtra)
 btnSaltoAlto.TextSize = 11
 btnSaltoInf.TextSize = 11
 local lblMobs = crearLabel("Mobs: -", 106, tExtra, TENUE, 12)
+
+-- [05] Mira
+local tMira = crearTarjeta("05", "MIRA", 178, "MIRA")
+local btnMira      = crearBoton("MIRA: OFF", 12, 30, 100, 32, tMira)
+local btnMiraColor = crearBoton("Color", 118, 30, 100, 32, tMira)
+local lblMiraTam   = crearLabel("Tamaño: 10", 70, tMira, TEXTO, 12)
+local btnTamMenos  = crearBoton("-", 150, 66, 30, 26, tMira)
+local btnTamMas    = crearBoton("+", 186, 66, 32, 26, tMira)
+local lblMiraGros  = crearLabel("Grosor: 2", 100, tMira, TEXTO, 12)
+local btnGrosMenos = crearBoton("-", 150, 96, 30, 26, tMira)
+local btnGrosMas   = crearBoton("+", 186, 96, 32, 26, tMira)
+local lblMiraHueco = crearLabel("Hueco: 4", 130, tMira, TEXTO, 12)
+local btnHuecoMenos= crearBoton("-", 150, 126, 30, 26, tMira)
+local btnHuecoMas  = crearBoton("+", 186, 126, 32, 26, tMira)
+local btnMiraPunto = crearBoton("Punto: OFF", 12, 126, 100, 26, tMira)
+btnMira.TextSize = 12
+btnMiraColor.TextSize = 12
+btnMiraPunto.TextSize = 11
 
 local function setEstado(texto)
     lblEstado.Text = "> " .. texto
@@ -541,6 +605,11 @@ local function actualizarUI()
     estiloToggle(btnAntiVuelco, antiVuelco, "ANTI-VUELCO: ON", "ANTI-VUELCO: OFF")
     estiloToggle(btnSaltoAlto, saltoAlto, "SALTO ALTO: ON", "SALTO ALTO: OFF")
     estiloToggle(btnSaltoInf, saltoInfinito, "SALTO INF: ON", "SALTO INF: OFF")
+    estiloToggle(btnMira, miraOn, "MIRA: ON", "MIRA: OFF")
+    estiloToggle(btnMiraPunto, miraPunto, "Punto: ON", "Punto: OFF")
+    lblMiraTam.Text = "Tamaño: " .. miraTam
+    lblMiraGros.Text = "Grosor: " .. miraGros
+    lblMiraHueco.Text = "Hueco: " .. miraHueco
     sucio = true
 end
 
@@ -549,11 +618,52 @@ local minimizado = false
 btnMin.MouseButton1Click:Connect(function()
     minimizado = not minimizado
     contenido.Visible = not minimizado
+    tabsFrame.Visible = not minimizado
     barraEstado.Visible = not minimizado
     linea.Visible = not minimizado
     frame.Size = UDim2.new(0, ANCHO_PANEL, 0, minimizado and ALTO_HEADER or ALTO_PANEL)
     btnMin.Text = minimizado and "+" or "–"
 end)
+
+----------------------------------------------------------------
+-- PESTAÑAS: mostrar un solo módulo a la vez
+----------------------------------------------------------------
+local tabBtns = {}
+local function mostrarModulo(i)
+    i = math.clamp(i, 1, #tarjetas)
+    pestana = i
+    for idx, info in ipairs(tarjetas) do
+        info.card.Visible = (idx == i)
+    end
+    for idx, b in ipairs(tabBtns) do
+        local activa = (idx == i)
+        b.BackgroundColor3 = activa and ON_FONDO or BOTON
+        b.TextColor3 = activa and NEON or TENUE
+        local st = b:FindFirstChildOfClass("UIStroke")
+        if st then st.Color = activa and NEON or NEON_DIM end
+    end
+    sucio = true
+end
+
+do
+    local ancho, paso, x0 = 43, 47, 8
+    for idx, info in ipairs(tarjetas) do
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(0, ancho, 0, 26)
+        b.Position = UDim2.new(0, x0 + (idx - 1) * paso, 0, 5)
+        b.BackgroundColor3 = BOTON
+        b.Font = FUENTE
+        b.TextSize = 11
+        b.TextColor3 = TENUE
+        b.Text = info.tab
+        b.AutoButtonColor = true
+        b.Parent = tabsFrame
+        esquina(b, 6)
+        borde(b, NEON_DIM, 1)
+        b.MouseButton1Click:Connect(function() mostrarModulo(idx) end)
+        tabBtns[idx] = b
+    end
+end
 
 ----------------------------------------------------------------
 -- MÓDULO: VELOCIDAD (se escribe, no sube sola)
@@ -1031,13 +1141,101 @@ table.insert(conexiones, UserInputService.JumpRequest:Connect(function()
 end))
 
 ----------------------------------------------------------------
+-- MÓDULO: MIRA (crosshair en el centro)
+----------------------------------------------------------------
+local miraGui = Instance.new("ScreenGui")
+miraGui.Name = "SpeedHubMira"
+miraGui.ResetOnSpawn = false
+miraGui.IgnoreGuiInset = true
+miraGui.DisplayOrder = -1
+miraGui.Parent = guiParent
+
+local function nuevaLinea()
+    local l = Instance.new("Frame")
+    l.AnchorPoint = Vector2.new(0.5, 0.5)
+    l.BorderSizePixel = 0
+    l.Active = false
+    l.Visible = false
+    l.Parent = miraGui
+    return l
+end
+
+local mTop, mBot, mLeft, mRight, mDot =
+    nuevaLinea(), nuevaLinea(), nuevaLinea(), nuevaLinea(), nuevaLinea()
+
+local function actualizarMira()
+    local color = MIRA_COLORES[miraColorIdx][2]
+    for _, l in ipairs({ mTop, mBot, mLeft, mRight }) do
+        l.BackgroundColor3 = color
+        l.Visible = miraOn
+    end
+    mDot.BackgroundColor3 = color
+    mDot.Visible = miraOn and miraPunto
+
+    local medio = miraHueco + miraTam / 2
+    mTop.Size    = UDim2.new(0, miraGros, 0, miraTam)
+    mBot.Size    = UDim2.new(0, miraGros, 0, miraTam)
+    mLeft.Size   = UDim2.new(0, miraTam, 0, miraGros)
+    mRight.Size  = UDim2.new(0, miraTam, 0, miraGros)
+    mTop.Position   = UDim2.new(0.5, 0, 0.5, -medio)
+    mBot.Position   = UDim2.new(0.5, 0, 0.5, medio)
+    mLeft.Position  = UDim2.new(0.5, -medio, 0.5, 0)
+    mRight.Position = UDim2.new(0.5, medio, 0.5, 0)
+    local d = math.max(2, miraGros + 1)
+    mDot.Size = UDim2.new(0, d, 0, d)
+    mDot.Position = UDim2.new(0.5, 0, 0.5, 0)
+end
+
+btnMira.MouseButton1Click:Connect(function()
+    miraOn = not miraOn
+    actualizarMira()
+    setEstado(miraOn and "Mira activada" or "Mira apagada")
+    actualizarUI()
+end)
+
+btnMiraColor.MouseButton1Click:Connect(function()
+    miraColorIdx = miraColorIdx % #MIRA_COLORES + 1
+    actualizarMira()
+    setEstado("Color: " .. MIRA_COLORES[miraColorIdx][1])
+end)
+
+btnMiraPunto.MouseButton1Click:Connect(function()
+    miraPunto = not miraPunto
+    actualizarMira()
+    actualizarUI()
+end)
+
+btnTamMas.MouseButton1Click:Connect(function()
+    miraTam = math.min(60, miraTam + 2); actualizarMira(); actualizarUI()
+end)
+btnTamMenos.MouseButton1Click:Connect(function()
+    miraTam = math.max(2, miraTam - 2); actualizarMira(); actualizarUI()
+end)
+btnGrosMas.MouseButton1Click:Connect(function()
+    miraGros = math.min(10, miraGros + 1); actualizarMira(); actualizarUI()
+end)
+btnGrosMenos.MouseButton1Click:Connect(function()
+    miraGros = math.max(1, miraGros - 1); actualizarMira(); actualizarUI()
+end)
+btnHuecoMas.MouseButton1Click:Connect(function()
+    miraHueco = math.min(40, miraHueco + 2); actualizarMira(); actualizarUI()
+end)
+btnHuecoMenos.MouseButton1Click:Connect(function()
+    miraHueco = math.max(0, miraHueco - 2); actualizarMira(); actualizarUI()
+end)
+
+----------------------------------------------------------------
 -- MÓDULO: INVENCIBLE
 ----------------------------------------------------------------
 local function aplicarInvencible()
     local hum = getHumanoid()
     if not hum then return end
+    local char = hum.Parent
     pcall(function()
         hum:SetStateEnabled(Enum.HumanoidStateType.Dead, not invencible)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, not invencible)
+        hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, not invencible)
+        if char then char:SetAttribute("BreakJointsOnDeath", not invencible) end
     end)
     if invencible and hum.Health > 0 then
         hum.Health = hum.MaxHealth
@@ -1052,6 +1250,15 @@ btnInvencible.MouseButton1Click:Connect(function()
 end)
 
 table.insert(conexiones, RunService.Heartbeat:Connect(function()
+    if not invencible then return end
+    local hum = getHumanoid()
+    if hum and hum.Health > 0 and hum.Health < hum.MaxHealth then
+        hum.Health = hum.MaxHealth
+    end
+end))
+
+-- RenderStepped rellena la vida más seguido, por si el daño llega entre cuadros
+table.insert(conexiones, RunService.RenderStepped:Connect(function()
     if not invencible then return end
     local hum = getHumanoid()
     if hum and hum.Health > 0 and hum.Health < hum.MaxHealth then
@@ -1202,6 +1409,9 @@ local function guardar()
     datos.antiVuelco    = antiVuelco
     datos.saltoAlto     = saltoAlto
     datos.saltoInfinito = saltoInfinito
+    datos.pestana       = pestana
+    datos.mira = { on = miraOn, punto = miraPunto, tam = miraTam,
+                   gros = miraGros, hueco = miraHueco, color = miraColorIdx }
     local pos = frame.Position
     datos.panel = { pos.X.Scale, pos.X.Offset, pos.Y.Scale, pos.Y.Offset }
     if type(datos.puntos) ~= "table" then datos.puntos = {} end
@@ -1247,6 +1457,7 @@ local function cerrar()
     local hum = getHumanoid()
     if hum then hum.WalkSpeed = VELOCIDAD_NORMAL end
     if gui then gui:Destroy() end
+    if miraGui then miraGui:Destroy() end
     _G.SpeedHubCerrar = nil
 end
 
@@ -1263,6 +1474,8 @@ end
 txtVel.Text = tostring(VELOCIDAD_ELEGIDA)
 aplicarVelocidad()
 aplicarSalto()
+mostrarModulo(pestana)
+actualizarMira()
 if config then
     setEstado("Configuración cargada")
 elseif activo then
