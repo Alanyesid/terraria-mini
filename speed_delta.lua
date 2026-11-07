@@ -47,7 +47,13 @@
         ejecutes el script, todo vuelve como lo dejaste.
       - Se guarda en el archivo SpeedHub_config.json de Delta.
 
-    El panel tiene pestañas arriba: toca VEL, TP, AUTO o EXTRA
+    AUTO-GOLPE
+      - Para juegos de subir fuerza golpeando cosas (árboles, rocas...).
+      - Usa sola la herramienta que tengas en la mano, muy rápido,
+        sin que tengas que estar tocando. Ajusta los golpes por segundo.
+      - No sirve ni se usa contra otros jugadores.
+
+    El panel tiene pestañas arriba: toca VEL, TP, AUTO, EXTRA o GOLPE
     para ver solo ese módulo y que ocupe menos espacio.
     El encabezado muestra los FPS y el ping.
 ]]
@@ -116,6 +122,8 @@ local vistos         = setmetatable({}, { __mode = "k" })
 local antiVuelco     = false
 local saltoAlto      = false
 local saltoInfinito  = false
+local autoGolpe      = false
+local golpesPorSeg   = 10
 local pestana        = 3     -- pestaña mostrada al abrir (3 = AUTO)
 local sucio          = false -- hay cambios sin guardar
 
@@ -175,6 +183,10 @@ if config then
     antiVuelco    = config.antiVuelco == true
     saltoAlto     = config.saltoAlto == true
     saltoInfinito = config.saltoInfinito == true
+    autoGolpe     = config.autoGolpe == true
+    if type(config.golpesPorSeg) == "number" then
+        golpesPorSeg = math.clamp(math.floor(config.golpesPorSeg), 1, 40)
+    end
     if type(config.pestana) == "number" then pestana = config.pestana end
     local puntos = type(config.puntos) == "table" and config.puntos[tostring(game.PlaceId)]
     if type(puntos) == "table" then
@@ -540,6 +552,15 @@ btnSaltoAlto.TextSize = 11
 btnSaltoInf.TextSize = 11
 local lblMobs = crearLabel("Mobs: -", 106, tExtra, TENUE, 12)
 
+-- [05] Auto-golpe
+local tGolpe = crearTarjeta("05", "AUTO-GOLPE // subir fuerza", 120, "GOLPE")
+local btnGolpe     = crearBoton("AUTO-GOLPE: OFF", 12, 30, 206, 32, tGolpe)
+local lblGolpeVel  = crearLabel("Golpes/seg: 10", 70, tGolpe, TEXTO, 13)
+local btnGolpeMenos= crearBoton("-", 150, 66, 30, 26, tGolpe)
+local btnGolpeMas  = crearBoton("+", 186, 66, 32, 26, tGolpe)
+local lblHerramienta = crearLabel("Herramienta: ninguna", 96, tGolpe, TENUE, 12)
+btnGolpe.TextSize = 12
+
 
 local function setEstado(texto)
     lblEstado.Text = "> " .. texto
@@ -557,6 +578,8 @@ local function actualizarUI()
     estiloToggle(btnAntiVuelco, antiVuelco, "ANTI-VUELCO: ON", "ANTI-VUELCO: OFF")
     estiloToggle(btnSaltoAlto, saltoAlto, "SALTO ALTO: ON", "SALTO ALTO: OFF")
     estiloToggle(btnSaltoInf, saltoInfinito, "SALTO INF: ON", "SALTO INF: OFF")
+    estiloToggle(btnGolpe, autoGolpe, "AUTO-GOLPE: ON", "AUTO-GOLPE: OFF")
+    lblGolpeVel.Text = "Golpes/seg: " .. golpesPorSeg
     sucio = true
 end
 
@@ -1094,6 +1117,48 @@ table.insert(conexiones, UserInputService.JumpRequest:Connect(function()
 end))
 
 ----------------------------------------------------------------
+-- MÓDULO: AUTO-GOLPE (usa la herramienta sola, para subir fuerza)
+----------------------------------------------------------------
+local function herramientaEquipada()
+    local char = player.Character
+    return char and char:FindFirstChildOfClass("Tool")
+end
+
+btnGolpe.MouseButton1Click:Connect(function()
+    autoGolpe = not autoGolpe
+    setEstado(autoGolpe and "Auto-golpe activado" or "Auto-golpe apagado")
+    actualizarUI()
+end)
+
+btnGolpeMas.MouseButton1Click:Connect(function()
+    golpesPorSeg = math.min(40, golpesPorSeg + 1); actualizarUI()
+end)
+btnGolpeMenos.MouseButton1Click:Connect(function()
+    golpesPorSeg = math.max(1, golpesPorSeg - 1); actualizarUI()
+end)
+
+local tiempoGolpe = 0
+local tiempoGolpeUI = 0
+table.insert(conexiones, RunService.Heartbeat:Connect(function(dt)
+    -- Muestra qué herramienta hay en la mano
+    tiempoGolpeUI = tiempoGolpeUI + dt
+    if tiempoGolpeUI >= 0.3 then
+        tiempoGolpeUI = 0
+        local h = herramientaEquipada()
+        lblHerramienta.Text = "Herramienta: " .. (h and h.Name or "ninguna")
+    end
+
+    if not autoGolpe then return end
+    local tool = herramientaEquipada()
+    if not tool then return end
+    tiempoGolpe = tiempoGolpe + dt
+    if tiempoGolpe >= 1 / golpesPorSeg then
+        tiempoGolpe = 0
+        pcall(function() tool:Activate() end)
+    end
+end))
+
+----------------------------------------------------------------
 -- MÓDULO: INVENCIBLE
 ----------------------------------------------------------------
 local function aplicarInvencible()
@@ -1321,6 +1386,8 @@ local function guardar()
     datos.antiVuelco    = antiVuelco
     datos.saltoAlto     = saltoAlto
     datos.saltoInfinito = saltoInfinito
+    datos.autoGolpe     = autoGolpe
+    datos.golpesPorSeg  = golpesPorSeg
     datos.pestana       = pestana
     local pos = frame.Position
     datos.panel = { pos.X.Scale, pos.X.Offset, pos.Y.Scale, pos.Y.Offset }
@@ -1356,6 +1423,7 @@ local function cerrar()
     vehiculoActivo = false
     invencible = false
     antiMobs = false
+    autoGolpe = false
     for _, c in ipairs(conexiones) do c:Disconnect() end
     conexiones = {}
     acelerandoBoton, frenandoBoton, turboBoton = false, false, false
