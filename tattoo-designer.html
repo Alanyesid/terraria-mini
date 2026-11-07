@@ -543,7 +543,46 @@
             display: flex;
             gap: 8px;
             margin-bottom: 24px;
-            flex-wrap: wrap;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .filter-row::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .filter-row::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .filter-row::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .filter-group-label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-subtle);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0 4px;
+            white-space: nowrap;
+        }
+
+        .filter-sep {
+            width: 1px;
+            height: 20px;
+            background: var(--border);
+            flex-shrink: 0;
+            align-self: center;
+            margin: 0 4px;
         }
 
         .filter-btn {
@@ -824,14 +863,56 @@
                         <label for="designStyle">Estilo</label>
                         <select id="designStyle" name="style">
                             <option value="">— Sin especificar —</option>
-                            <option value="Blackwork">Blackwork</option>
-                            <option value="Traditional">Traditional</option>
-                            <option value="Neo-trad">Neo-traditional</option>
-                            <option value="Realismo">Realismo</option>
-                            <option value="Acuarela">Acuarela</option>
-                            <option value="Geométrico">Geométrico</option>
-                            <option value="Minimalista">Minimalista</option>
-                            <option value="Japonés">Japonés</option>
+                            <optgroup label="Clásicos">
+                                <option value="Traditional">Traditional</option>
+                                <option value="Neo-trad">Neo-traditional</option>
+                                <option value="Old School">Old School</option>
+                            </optgroup>
+                            <optgroup label="Oscuros">
+                                <option value="Blackwork">Blackwork</option>
+                                <option value="Dark Art">Dark Art</option>
+                                <option value="Trash Polka">Trash Polka</option>
+                                <option value="Black & Grey">Black &amp; Grey</option>
+                            </optgroup>
+                            <optgroup label="Realistas">
+                                <option value="Realismo">Realismo</option>
+                                <option value="Hiper-realismo">Hiper-realismo</option>
+                                <option value="Retrato">Retrato</option>
+                            </optgroup>
+                            <optgroup label="Artísticos">
+                                <option value="Acuarela">Acuarela</option>
+                                <option value="Sketch">Sketch</option>
+                                <option value="Ilustración">Ilustración</option>
+                                <option value="Surrealism">Surrealismo</option>
+                            </optgroup>
+                            <optgroup label="Geométricos">
+                                <option value="Geométrico">Geométrico</option>
+                                <option value="Dotwork">Dotwork</option>
+                                <option value="Mandala">Mandala</option>
+                                <option value="Sacred Geo">Sacred Geometry</option>
+                            </optgroup>
+                            <optgroup label="Minimalistas">
+                                <option value="Minimalista">Minimalista</option>
+                                <option value="Linework">Linework</option>
+                                <option value="Micro">Micro</option>
+                                <option value="Fineline">Fineline</option>
+                            </optgroup>
+                            <optgroup label="Culturales">
+                                <option value="Japonés">Japonés</option>
+                                <option value="Tribal">Tribal</option>
+                                <option value="Maorí">Maorí</option>
+                                <option value="Chicano">Chicano</option>
+                                <option value="Celta">Celta</option>
+                                <option value="Nórdico">Nórdico</option>
+                            </optgroup>
+                            <optgroup label="Pop & Otros">
+                                <option value="Lettering">Lettering</option>
+                                <option value="Biomecánico">Biomecánico</option>
+                                <option value="Cyber Sigilism">Cyber Sigilism</option>
+                                <option value="Ignorant">Ignorant Style</option>
+                                <option value="Pop Art">Pop Art</option>
+                                <option value="Sticker">Sticker Tattoo</option>
+                            </optgroup>
                         </select>
                     </div>
 
@@ -860,11 +941,56 @@
             <!-- Filters -->
             <div class="filter-row" role="group" aria-label="Filtrar por estilo">
                 <button class="filter-btn active" data-filter="all">Todos</button>
-                <button class="filter-btn" data-filter="Blackwork">Blackwork</button>
+                <div class="filter-sep" aria-hidden="true"></div>
+                <span class="filter-group-label" aria-hidden="true">Clásicos</span>
                 <button class="filter-btn" data-filter="Traditional">Traditional</button>
+                <button class="filter-btn" data-filter="Neo-trad">Neo-trad</button>
+                <button class="filter-btn" data-filter="Old School">Old School</button>
+                <div class="filter-sep" aria-hidden="true"></div>
+                <span class="filter-group-label" aria-hidden="true">Oscuros</span>
+                <button class="filter-btn" data-filter="Blackwork">Blackwork</button>
+                <button class="filter-btn" data-filter="Dark Art">Dark Art</button>
+                <button class="filter-btn" data-filter="Trash Polka">Trash Polka</button>
+                <button class="filter-btn" data-filter="Black & Grey">Black &amp; Grey</button>
+                <div class="filter-sep" aria-hidden="true"></div>
+                <span class="filter-group-label" aria-hidden="true">Realistas</span>
                 <button class="filter-btn" data-filter="Realismo">Realismo</button>
+                <button class="filter-btn" data-filter="Hiper-realismo">Hiper-real</button>
+                <button class="filter-btn" data-filter="Retrato">Retrato</button>
+                <div class="filter-sep" aria-hidden="true"></div>
+                <span class="filter-group-label" aria-hidden="true">Artísticos</span>
+                <button class="filter-btn" data-filter="Acuarela">Acuarela</button>
+                <button class="filter-btn" data-filter="Sketch">Sketch</button>
+                <button class="filter-btn" data-filter="Ilustración">Ilustración</button>
+                <button class="filter-btn" data-filter="Surrealism">Surrealismo</button>
+                <div class="filter-sep" aria-hidden="true"></div>
+                <span class="filter-group-label" aria-hidden="true">Geométricos</span>
+                <button class="filter-btn" data-filter="Geométrico">Geométrico</button>
+                <button class="filter-btn" data-filter="Dotwork">Dotwork</button>
+                <button class="filter-btn" data-filter="Mandala">Mandala</button>
+                <button class="filter-btn" data-filter="Sacred Geo">Sacred Geo</button>
+                <div class="filter-sep" aria-hidden="true"></div>
+                <span class="filter-group-label" aria-hidden="true">Finos</span>
                 <button class="filter-btn" data-filter="Minimalista">Minimalista</button>
+                <button class="filter-btn" data-filter="Linework">Linework</button>
+                <button class="filter-btn" data-filter="Micro">Micro</button>
+                <button class="filter-btn" data-filter="Fineline">Fineline</button>
+                <div class="filter-sep" aria-hidden="true"></div>
+                <span class="filter-group-label" aria-hidden="true">Culturales</span>
                 <button class="filter-btn" data-filter="Japonés">Japonés</button>
+                <button class="filter-btn" data-filter="Tribal">Tribal</button>
+                <button class="filter-btn" data-filter="Maorí">Maorí</button>
+                <button class="filter-btn" data-filter="Chicano">Chicano</button>
+                <button class="filter-btn" data-filter="Celta">Celta</button>
+                <button class="filter-btn" data-filter="Nórdico">Nórdico</button>
+                <div class="filter-sep" aria-hidden="true"></div>
+                <span class="filter-group-label" aria-hidden="true">Pop &amp; Otros</span>
+                <button class="filter-btn" data-filter="Lettering">Lettering</button>
+                <button class="filter-btn" data-filter="Biomecánico">Biomecánico</button>
+                <button class="filter-btn" data-filter="Cyber Sigilism">Cyber Sigil</button>
+                <button class="filter-btn" data-filter="Ignorant">Ignorant</button>
+                <button class="filter-btn" data-filter="Pop Art">Pop Art</button>
+                <button class="filter-btn" data-filter="Sticker">Sticker</button>
             </div>
 
             <div class="gallery-grid" id="gallery" role="list" aria-label="Diseños guardados"></div>
